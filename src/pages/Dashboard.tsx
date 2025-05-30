@@ -4,514 +4,353 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Input } from "@/components/ui/input";
-import { Calendar } from "@/components/ui/calendar";
-import { Alert, AlertDescription } from "@/components/ui/alert";
 import { 
-  Phone, 
-  Users, 
   TrendingUp, 
+  TrendingDown, 
+  Users, 
+  Phone, 
   Target, 
-  DollarSign, 
-  Clock, 
-  PhoneCall,
-  MessageSquare,
-  Mail,
-  Calendar as CalendarIcon,
+  DollarSign,
+  Calendar,
+  Clock,
+  Award,
+  Activity,
   BarChart3,
   PieChart,
-  Activity,
-  Zap,
-  AlertTriangle,
-  CheckCircle,
-  XCircle,
-  Filter,
-  Download,
-  RefreshCw,
-  Settings,
-  Bell,
-  Search,
-  Plus,
-  Edit,
-  Trash2,
+  ArrowUp,
+  ArrowDown,
   Eye,
-  Star,
-  MapPin,
-  Globe,
-  Smartphone,
-  Headphones,
-  Timer,
-  PlayCircle,
-  PauseCircle,
-  StopCircle
+  MessageSquare,
+  RefreshCw,
+  Filter,
+  Download
 } from 'lucide-react';
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar, PieChart as RechartsPieChart, Cell, Area, AreaChart } from 'recharts';
-import { supabase } from "@/integrations/supabase/client";
-import { useToast } from "@/hooks/use-toast";
-
-// Datos simulados para el dashboard
-const dashboardData = {
-  realTimeMetrics: {
-    totalLeads: 15420,
-    todayLeads: 127,
-    activeAgents: 18,
-    callsInProgress: 12,
-    conversionRate: 23.4,
-    dailyRevenue: 2850000,
-    avgCallDuration: 8.5,
-    callsCompleted: 89
-  },
-  alerts: [
-    { type: 'critical', message: 'Facebook Ads: CPL aumentó 40% en últimas 2 horas', time: '10:30 AM' },
-    { type: 'success', message: 'Meta mensual alcanzada - Línea Contabilidad', time: '9:15 AM' },
-    { type: 'warning', message: '3 asesores inactivos por más de 15 minutos', time: '8:45 AM' },
-    { type: 'info', message: 'Lead alta calidad asignado - Score: 95', time: '8:30 AM' }
-  ],
-  conversionBySource: [
-    { source: 'Facebook Ads', leads: 8420, conversions: 1970, conversion_rate: 23.4, cpl: 12500, roi: 340 },
-    { source: 'TikTok Ads', leads: 3250, conversions: 845, conversion_rate: 26.0, cpl: 15200, roi: 290 },
-    { source: 'Google Ads', leads: 2100, conversions: 420, conversion_rate: 20.0, cpl: 18500, roi: 280 },
-    { source: 'Instagram', leads: 1650, conversions: 297, conversion_rate: 18.0, cpl: 14800, roi: 250 }
-  ],
-  dailyActivity: [
-    { hour: '08:00', calls: 15, leads: 25, conversions: 3 },
-    { hour: '09:00', calls: 32, leads: 45, conversions: 8 },
-    { hour: '10:00', calls: 28, leads: 38, conversions: 6 },
-    { hour: '11:00', calls: 35, leads: 42, conversions: 9 },
-    { hour: '12:00', calls: 22, leads: 28, conversions: 4 },
-    { hour: '13:00', calls: 18, leads: 22, conversions: 3 },
-    { hour: '14:00', calls: 30, leads: 40, conversions: 7 },
-    { hour: '15:00', calls: 33, leads: 43, conversions: 8 },
-    { hour: '16:00', calls: 29, leads: 37, conversions: 6 },
-    { hour: '17:00', calls: 25, leads: 32, conversions: 5 }
-  ],
-  agentStatus: [
-    { id: 1, name: 'Carlos Rodríguez', status: 'En llamada', time: '00:05:23', calls: 12, conversions: 3, avatar: 'CR' },
-    { id: 2, name: 'María González', status: 'Disponible', time: '00:00:00', calls: 15, conversions: 4, avatar: 'MG' },
-    { id: 3, name: 'Juan Pérez', status: 'En pausa', time: '00:02:15', calls: 8, conversions: 2, avatar: 'JP' },
-    { id: 4, name: 'Ana López', status: 'En llamada', time: '00:08:42', calls: 18, conversions: 5, avatar: 'AL' },
-    { id: 5, name: 'Luis Martínez', status: 'Tipificando', time: '00:01:05', calls: 10, conversions: 3, avatar: 'LM' },
-    { id: 6, name: 'Sofia Torres', status: 'Disponible', time: '00:00:00', calls: 14, conversions: 4, avatar: 'ST' }
-  ],
-  coursesPerformance: [
-    { course: 'Contabilidad Básica', leads: 3200, sales: 890, revenue: 266100000, conversion: 27.8 },
-    { course: 'Excel Avanzado', leads: 2800, sales: 728, revenue: 254120000, conversion: 26.0 },
-    { course: 'Marketing Digital', leads: 2400, sales: 576, revenue: 287520000, conversion: 24.0 },
-    { course: 'Nómina', leads: 2100, sales: 483, revenue: 192717000, conversion: 23.0 }
-  ],
-  weeklyTrends: [
-    { day: 'Lun', leads: 180, calls: 245, conversions: 42 },
-    { day: 'Mar', leads: 210, calls: 285, conversions: 51 },
-    { day: 'Mié', leads: 195, calls: 267, conversions: 47 },
-    { day: 'Jue', leads: 225, calls: 298, conversions: 56 },
-    { day: 'Vie', leads: 240, calls: 315, conversions: 61 },
-    { day: 'Sáb', leads: 165, calls: 198, conversions: 34 },
-    { day: 'Dom', leads: 85, calls: 102, conversions: 18 }
-  }
-};
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, BarChart, Bar, PieChart as RechartsPieChart, Cell, AreaChart, Area } from 'recharts';
 
 const Dashboard = () => {
-  const [selectedPeriod, setSelectedPeriod] = useState('today');
-  const [autoRefresh, setAutoRefresh] = useState(true);
-  const [lastUpdate, setLastUpdate] = useState(new Date());
-  const [selectedSource, setSelectedSource] = useState('all');
-  const { toast } = useToast();
+  const [dateRange, setDateRange] = useState('today');
+  const [refreshing, setRefreshing] = useState(false);
 
-  // Auto-refresh cada 30 segundos
-  useEffect(() => {
-    if (autoRefresh) {
-      const interval = setInterval(() => {
-        setLastUpdate(new Date());
-        // Aquí se actualizarían los datos desde la API
-      }, 30000);
-      return () => clearInterval(interval);
-    }
-  }, [autoRefresh]);
-
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'En llamada': return 'bg-green-500';
-      case 'Disponible': return 'bg-blue-500';
-      case 'En pausa': return 'bg-yellow-500';
-      case 'Tipificando': return 'bg-orange-500';
-      default: return 'bg-gray-500';
+  // Datos simulados para métricas en tiempo real
+  const metrics = {
+    leads: {
+      total: 1247,
+      new: 89,
+      contacted: 156,
+      converted: 23,
+      trend: 12.5
+    },
+    calls: {
+      total: 342,
+      connected: 234,
+      avgDuration: '8:45',
+      conversionRate: 6.7,
+      trend: -2.3
+    },
+    revenue: {
+      total: 45670000,
+      monthly: 67800000,
+      target: 80000000,
+      trend: 18.2
+    },
+    advisors: {
+      active: 12,
+      available: 8,
+      inCall: 3,
+      onBreak: 1,
+      avgPerformance: 78.5
     }
   };
 
-  const getAlertIcon = (type: string) => {
-    switch (type) {
-      case 'critical': return <AlertTriangle className="h-4 w-4 text-red-500" />;
-      case 'success': return <CheckCircle className="h-4 w-4 text-green-500" />;
-      case 'warning': return <AlertTriangle className="h-4 w-4 text-yellow-500" />;
-      case 'info': return <Activity className="h-4 w-4 text-blue-500" />;
-      default: return <Activity className="h-4 w-4" />;
-    }
+  // Datos para gráficos
+  const dailyTrends = [
+    { time: '09:00', leads: 45, calls: 32, conversions: 3 },
+    { time: '10:00', leads: 67, calls: 48, conversions: 5 },
+    { time: '11:00', leads: 89, calls: 67, conversions: 8 },
+    { time: '12:00', leads: 78, calls: 56, conversions: 6 },
+    { time: '13:00', leads: 45, calls: 34, conversions: 4 },
+    { time: '14:00', leads: 98, calls: 78, conversions: 12 },
+    { time: '15:00', leads: 123, calls: 89, conversions: 15 },
+    { time: '16:00', leads: 109, calls: 82, conversions: 11 },
+    { time: '17:00', leads: 87, calls: 65, conversions: 9 },
+    { time: '18:00', leads: 56, calls: 43, conversions: 6 }
+  ];
+
+  const sourceData = [
+    { name: 'Meta Ads', value: 342, cost: 2500000, conversions: 23, color: '#3b82f6' },
+    { name: 'TikTok Ads', value: 189, cost: 1800000, conversions: 15, color: '#10b981' },
+    { name: 'Google Ads', value: 156, cost: 2200000, conversions: 18, color: '#f59e0b' },
+    { name: 'Instagram', value: 98, cost: 1200000, conversions: 8, color: '#ef4444' },
+    { name: 'Orgánico', value: 67, cost: 0, conversions: 5, color: '#8b5cf6' }
+  ];
+
+  const advisorPerformance = [
+    { name: 'Carlos R.', calls: 45, conversions: 8, revenue: 8500000, efficiency: 92 },
+    { name: 'María G.', calls: 38, conversions: 6, revenue: 6800000, efficiency: 87 },
+    { name: 'Luis M.', calls: 42, conversions: 7, revenue: 7200000, efficiency: 89 },
+    { name: 'Ana L.', calls: 35, conversions: 5, revenue: 5900000, efficiency: 78 },
+    { name: 'Diego S.', calls: 40, conversions: 6, revenue: 6500000, efficiency: 85 }
+  ];
+
+  const handleRefresh = async () => {
+    setRefreshing(true);
+    // Simular actualización de datos
+    setTimeout(() => setRefreshing(false), 2000);
+  };
+
+  const formatCurrency = (amount) => {
+    return new Intl.NumberFormat('es-CO', {
+      style: 'currency',
+      currency: 'COP',
+      minimumFractionDigits: 0
+    }).format(amount);
   };
 
   return (
-    <div className="p-6 space-y-6 bg-gray-50 min-h-screen">
+    <div className="p-6 space-y-6">
       {/* Header con controles */}
       <div className="flex justify-between items-center">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900">Dashboard CCD Capacitación</h1>
-          <p className="text-gray-600">
-            Última actualización: {lastUpdate.toLocaleTimeString()}
-            {autoRefresh && <span className="ml-2 text-green-600">● Auto-refresh activo</span>}
-          </p>
+          <h1 className="text-3xl font-bold">Dashboard Comercial</h1>
+          <p className="text-gray-600">Monitoreo en tiempo real - CCD Capacitación</p>
         </div>
-        <div className="flex gap-2">
-          <Select value={selectedPeriod} onValueChange={setSelectedPeriod}>
-            <SelectTrigger className="w-32">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="today">Hoy</SelectItem>
-              <SelectItem value="week">Esta semana</SelectItem>
-              <SelectItem value="month">Este mes</SelectItem>
-              <SelectItem value="quarter">Trimestre</SelectItem>
-            </SelectContent>
-          </Select>
-          <Button
-            variant={autoRefresh ? "default" : "outline"}
-            onClick={() => setAutoRefresh(!autoRefresh)}
-            size="sm"
+        <div className="flex gap-3">
+          <select 
+            value={dateRange} 
+            onChange={(e) => setDateRange(e.target.value)}
+            className="px-4 py-2 border rounded-lg bg-white"
           >
-            <RefreshCw className="h-4 w-4 mr-2" />
-            Auto-refresh
+            <option value="today">Hoy</option>
+            <option value="week">Esta semana</option>
+            <option value="month">Este mes</option>
+            <option value="quarter">Trimestre</option>
+          </select>
+          <Button variant="outline" onClick={handleRefresh} disabled={refreshing}>
+            <RefreshCw className={`h-4 w-4 mr-2 ${refreshing ? 'animate-spin' : ''}`} />
+            Actualizar
           </Button>
-          <Button variant="outline" size="sm">
+          <Button variant="outline">
             <Download className="h-4 w-4 mr-2" />
             Exportar
           </Button>
-          <Button variant="outline" size="sm">
-            <Settings className="h-4 w-4 mr-2" />
-            Configurar
-          </Button>
         </div>
       </div>
 
-      {/* Alertas críticas */}
-      <div className="grid grid-cols-1 gap-2">
-        {dashboardData.alerts.slice(0, 2).map((alert, index) => (
-          <Alert key={index} className={`border-l-4 ${
-            alert.type === 'critical' ? 'border-red-500 bg-red-50' :
-            alert.type === 'success' ? 'border-green-500 bg-green-50' :
-            alert.type === 'warning' ? 'border-yellow-500 bg-yellow-50' :
-            'border-blue-500 bg-blue-50'
-          }`}>
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                {getAlertIcon(alert.type)}
-                <AlertDescription className="font-medium">
-                  {alert.message}
-                </AlertDescription>
-              </div>
-              <span className="text-sm text-gray-500">{alert.time}</span>
-            </div>
-          </Alert>
-        ))}
-      </div>
-
-      {/* Métricas principales en tiempo real */}
+      {/* Métricas principales */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        <Card className="bg-gradient-to-r from-blue-500 to-blue-600 text-white">
-          <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium">Leads Totales</CardTitle>
-            <Users className="h-4 w-4" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{dashboardData.realTimeMetrics.totalLeads.toLocaleString()}</div>
-            <p className="text-xs opacity-80">
-              +{dashboardData.realTimeMetrics.todayLeads} hoy
-            </p>
-          </CardContent>
-        </Card>
-
-        <Card className="bg-gradient-to-r from-green-500 to-green-600 text-white">
-          <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium">Tasa Conversión</CardTitle>
-            <TrendingUp className="h-4 w-4" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{dashboardData.realTimeMetrics.conversionRate}%</div>
-            <p className="text-xs opacity-80">
-              +2.1% vs ayer
-            </p>
-          </CardContent>
-        </Card>
-
-        <Card className="bg-gradient-to-r from-purple-500 to-purple-600 text-white">
-          <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium">Ingresos Hoy</CardTitle>
-            <DollarSign className="h-4 w-4" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">
-              ${(dashboardData.realTimeMetrics.dailyRevenue / 1000).toFixed(0)}K
+        <Card>
+          <CardContent className="pt-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm text-gray-600">Leads Totales</p>
+                <p className="text-3xl font-bold">{metrics.leads.total.toLocaleString()}</p>
+                <div className="flex items-center mt-2">
+                  {metrics.leads.trend > 0 ? (
+                    <ArrowUp className="h-4 w-4 text-green-600 mr-1" />
+                  ) : (
+                    <ArrowDown className="h-4 w-4 text-red-600 mr-1" />
+                  )}
+                  <span className={`text-sm ${metrics.leads.trend > 0 ? 'text-green-600' : 'text-red-600'}`}>
+                    {Math.abs(metrics.leads.trend)}%
+                  </span>
+                  <span className="text-sm text-gray-600 ml-1">vs ayer</span>
+                </div>
+              </div>
+              <Users className="h-8 w-8 text-blue-600" />
             </div>
-            <p className="text-xs opacity-80">
-              Meta: $3.2M
-            </p>
           </CardContent>
         </Card>
 
-        <Card className="bg-gradient-to-r from-orange-500 to-orange-600 text-white">
-          <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium">Asesores Activos</CardTitle>
-            <Headphones className="h-4 w-4" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{dashboardData.realTimeMetrics.activeAgents}</div>
-            <p className="text-xs opacity-80">
-              {dashboardData.realTimeMetrics.callsInProgress} en llamada
-            </p>
+        <Card>
+          <CardContent className="pt-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm text-gray-600">Llamadas Realizadas</p>
+                <p className="text-3xl font-bold">{metrics.calls.total}</p>
+                <div className="flex items-center mt-2">
+                  <span className="text-sm text-gray-600">
+                    {metrics.calls.connected} conectadas ({((metrics.calls.connected/metrics.calls.total)*100).toFixed(1)}%)
+                  </span>
+                </div>
+              </div>
+              <Phone className="h-8 w-8 text-green-600" />
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardContent className="pt-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm text-gray-600">Conversiones</p>
+                <p className="text-3xl font-bold">{metrics.leads.converted}</p>
+                <div className="flex items-center mt-2">
+                  <span className="text-sm text-gray-600">
+                    Tasa: {metrics.calls.conversionRate}%
+                  </span>
+                </div>
+              </div>
+              <Target className="h-8 w-8 text-purple-600" />
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardContent className="pt-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm text-gray-600">Ingresos Hoy</p>
+                <p className="text-2xl font-bold">{formatCurrency(metrics.revenue.total)}</p>
+                <div className="flex items-center mt-2">
+                  <ArrowUp className="h-4 w-4 text-green-600 mr-1" />
+                  <span className="text-sm text-green-600">
+                    {metrics.revenue.trend}% vs ayer
+                  </span>
+                </div>
+              </div>
+              <DollarSign className="h-8 w-8 text-yellow-600" />
+            </div>
           </CardContent>
         </Card>
       </div>
 
       {/* Tabs principales */}
-      <Tabs defaultValue="overview" className="space-y-4">
-        <TabsList className="grid w-full grid-cols-6">
-          <TabsTrigger value="overview">Vista General</TabsTrigger>
-          <TabsTrigger value="agents">Asesores</TabsTrigger>
+      <Tabs defaultValue="overview" className="space-y-6">
+        <TabsList className="grid w-full grid-cols-5">
+          <TabsTrigger value="overview">Resumen</TabsTrigger>
+          <TabsTrigger value="leads">Leads</TabsTrigger>
+          <TabsTrigger value="advisors">Asesores</TabsTrigger>
           <TabsTrigger value="campaigns">Campañas</TabsTrigger>
-          <TabsTrigger value="sources">Fuentes</TabsTrigger>
-          <TabsTrigger value="courses">Cursos</TabsTrigger>
           <TabsTrigger value="analytics">Analytics</TabsTrigger>
         </TabsList>
 
-        {/* Vista General */}
         <TabsContent value="overview" className="space-y-6">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            {/* Gráfico de actividad diaria */}
+            {/* Gráfico de tendencias diarias */}
             <Card>
               <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <BarChart3 className="h-5 w-5" />
-                  Actividad del Día
-                </CardTitle>
+                <CardTitle>Actividad del Día</CardTitle>
               </CardHeader>
               <CardContent>
-                <ResponsiveContainer width="100%" height={250}>
-                  <AreaChart data={dashboardData.dailyActivity}>
+                <ResponsiveContainer width="100%" height={300}>
+                  <AreaChart data={dailyTrends}>
                     <CartesianGrid strokeDasharray="3 3" />
-                    <XAxis dataKey="hour" />
+                    <XAxis dataKey="time" />
                     <YAxis />
                     <Tooltip />
-                    <Area type="monotone" dataKey="calls" stackId="1" stroke="#8884d8" fill="#8884d8" fillOpacity={0.6} />
-                    <Area type="monotone" dataKey="conversions" stackId="1" stroke="#82ca9d" fill="#82ca9d" fillOpacity={0.8} />
+                    <Legend />
+                    <Area type="monotone" dataKey="leads" stackId="1" stroke="#3b82f6" fill="#3b82f6" />
+                    <Area type="monotone" dataKey="calls" stackId="1" stroke="#10b981" fill="#10b981" />
+                    <Area type="monotone" dataKey="conversions" stackId="1" stroke="#f59e0b" fill="#f59e0b" />
                   </AreaChart>
                 </ResponsiveContainer>
               </CardContent>
             </Card>
 
-            {/* Distribución por fuente */}
+            {/* Distribución por fuentes */}
             <Card>
               <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <PieChart className="h-5 w-5" />
-                  Conversión por Fuente
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  {dashboardData.conversionBySource.map((source, index) => (
-                    <div key={index} className="flex items-center justify-between">
-                      <div className="flex items-center gap-3">
-                        <div className={`w-3 h-3 rounded-full bg-blue-${(index + 1) * 100}`}></div>
-                        <span className="font-medium">{source.source}</span>
-                      </div>
-                      <div className="text-right">
-                        <div className="font-bold">{source.conversion_rate}%</div>
-                        <div className="text-sm text-gray-500">{source.conversions} ventas</div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </CardContent>
-            </Card>
-          </div>
-
-          {/* Métricas detalladas */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-sm">Rendimiento de Llamadas</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-3">
-                <div className="flex justify-between">
-                  <span>Llamadas completadas</span>
-                  <span className="font-bold">{dashboardData.realTimeMetrics.callsCompleted}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span>Duración promedio</span>
-                  <span className="font-bold">{dashboardData.realTimeMetrics.avgCallDuration} min</span>
-                </div>
-                <div className="flex justify-between">
-                  <span>En progreso</span>
-                  <span className="font-bold text-green-600">{dashboardData.realTimeMetrics.callsInProgress}</span>
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-sm">Metas del Día</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-3">
-                <div>
-                  <div className="flex justify-between mb-1">
-                    <span>Llamadas</span>
-                    <span>89/120</span>
-                  </div>
-                  <Progress value={74} className="h-2" />
-                </div>
-                <div>
-                  <div className="flex justify-between mb-1">
-                    <span>Conversiones</span>
-                    <span>21/30</span>
-                  </div>
-                  <Progress value={70} className="h-2" />
-                </div>
-                <div>
-                  <div className="flex justify-between mb-1">
-                    <span>Ingresos</span>
-                    <span>$2.8M/$3.2M</span>
-                  </div>
-                  <Progress value={87} className="h-2" />
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-sm">Alertas Recientes</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-2">
-                {dashboardData.alerts.slice(0, 4).map((alert, index) => (
-                  <div key={index} className="flex items-start gap-2 text-sm">
-                    {getAlertIcon(alert.type)}
-                    <div className="flex-1">
-                      <p className="text-xs text-gray-600">{alert.message}</p>
-                      <p className="text-xs text-gray-400">{alert.time}</p>
-                    </div>
-                  </div>
-                ))}
-              </CardContent>
-            </Card>
-          </div>
-        </TabsContent>
-
-        {/* Gestión de Asesores */}
-        <TabsContent value="agents" className="space-y-6">
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Users className="h-5 w-5" />
-                Estado de Asesores en Tiempo Real
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                {dashboardData.agentStatus.map((agent) => (
-                  <Card key={agent.id} className="p-4">
-                    <div className="flex items-center gap-3">
-                      <Avatar>
-                        <AvatarFallback>{agent.avatar}</AvatarFallback>
-                      </Avatar>
-                      <div className="flex-1">
-                        <h4 className="font-medium">{agent.name}</h4>
-                        <div className="flex items-center gap-2">
-                          <div className={`w-2 h-2 rounded-full ${getStatusColor(agent.status)}`}></div>
-                          <span className="text-sm text-gray-600">{agent.status}</span>
-                        </div>
-                      </div>
-                    </div>
-                    <div className="mt-3 space-y-1">
-                      <div className="flex justify-between text-sm">
-                        <span>Tiempo:</span>
-                        <span className="font-mono">{agent.time}</span>
-                      </div>
-                      <div className="flex justify-between text-sm">
-                        <span>Llamadas:</span>
-                        <span>{agent.calls}</span>
-                      </div>
-                      <div className="flex justify-between text-sm">
-                        <span>Conversiones:</span>
-                        <span className="text-green-600">{agent.conversions}</span>
-                      </div>
-                    </div>
-                  </Card>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
-
-        {/* Análisis de Campañas */}
-        <TabsContent value="campaigns" className="space-y-6">
-          <Card>
-            <CardHeader>
-              <CardTitle>Rendimiento de Campañas</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                {dashboardData.conversionBySource.map((source, index) => (
-                  <div key={index} className="border rounded-lg p-4">
-                    <div className="flex justify-between items-start mb-3">
-                      <div>
-                        <h4 className="font-medium">{source.source}</h4>
-                        <p className="text-sm text-gray-600">{source.leads.toLocaleString()} leads generados</p>
-                      </div>
-                      <Badge variant={source.roi > 300 ? "default" : source.roi > 250 ? "secondary" : "destructive"}>
-                        ROI: {source.roi}%
-                      </Badge>
-                    </div>
-                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
-                      <div>
-                        <p className="text-gray-600">Conversiones</p>
-                        <p className="font-bold text-lg">{source.conversions}</p>
-                      </div>
-                      <div>
-                        <p className="text-gray-600">Tasa Conv.</p>
-                        <p className="font-bold text-lg">{source.conversion_rate}%</p>
-                      </div>
-                      <div>
-                        <p className="text-gray-600">CPL</p>
-                        <p className="font-bold text-lg">${(source.cpl / 1000).toFixed(1)}K</p>
-                      </div>
-                      <div>
-                        <p className="text-gray-600">Estado</p>
-                        <p className="font-bold text-lg text-green-600">Activa</p>
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
-
-        {/* Análisis de Fuentes */}
-        <TabsContent value="sources" className="space-y-6">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            <Card>
-              <CardHeader>
-                <CardTitle>Costo por Lead (CPL)</CardTitle>
+                <CardTitle>Leads por Fuente</CardTitle>
               </CardHeader>
               <CardContent>
                 <ResponsiveContainer width="100%" height={300}>
-                  <BarChart data={dashboardData.conversionBySource}>
-                    <CartesianGrid strokeDasharray="3 3" />
-                    <XAxis dataKey="source" />
-                    <YAxis />
-                    <Tooltip formatter={(value) => [`$${(value as number / 1000).toFixed(1)}K`, 'CPL']} />
-                    <Bar dataKey="cpl" fill="#8884d8" />
-                  </BarChart>
+                  <RechartsPieChart>
+                    <Pie
+                      data={sourceData}
+                      cx="50%"
+                      cy="50%"
+                      outerRadius={80}
+                      fill="#8884d8"
+                      dataKey="value"
+                      label={({name, percent}) => `${name} ${(percent * 100).toFixed(0)}%`}
+                    >
+                      {sourceData.map((entry, index) => (
+                        <Cell key={`cell-${index}`} fill={entry.color} />
+                      ))}
+                    </Pie>
+                    <Tooltip />
+                  </RechartsPieChart>
                 </ResponsiveContainer>
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* Estado de asesores */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Activity className="h-5 w-5" />
+                Estado del Equipo
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+                <div className="text-center">
+                  <div className="text-2xl font-bold text-green-600">{metrics.advisors.available}</div>
+                  <div className="text-sm text-gray-600">Disponibles</div>
+                </div>
+                <div className="text-center">
+                  <div className="text-2xl font-bold text-blue-600">{metrics.advisors.inCall}</div>
+                  <div className="text-sm text-gray-600">En Llamada</div>
+                </div>
+                <div className="text-center">
+                  <div className="text-2xl font-bold text-yellow-600">{metrics.advisors.onBreak}</div>
+                  <div className="text-sm text-gray-600">En Pausa</div>
+                </div>
+                <div className="text-center">
+                  <div className="text-2xl font-bold text-purple-600">{metrics.advisors.avgPerformance}%</div>
+                  <div className="text-sm text-gray-600">Performance Promedio</div>
+                </div>
+              </div>
+
+              <div className="space-y-3">
+                {advisorPerformance.map((advisor, index) => (
+                  <div key={index} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
+                        <span className="font-bold text-blue-600">{advisor.name.split(' ').map(n => n[0]).join('')}</span>
+                      </div>
+                      <div>
+                        <h4 className="font-medium">{advisor.name}</h4>
+                        <p className="text-sm text-gray-600">{advisor.calls} llamadas • {advisor.conversions} conversiones</p>
+                      </div>
+                    </div>
+                    <div className="text-right">
+                      <div className="font-medium">{formatCurrency(advisor.revenue)}</div>
+                      <div className="flex items-center gap-2">
+                        <Progress value={advisor.efficiency} className="w-20 h-2" />
+                        <span className="text-sm text-gray-600">{advisor.efficiency}%</span>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="leads">
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <Card>
+              <CardHeader>
+                <CardTitle>Estados de Leads</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  <div className="flex justify-between items-center">
+                    <span>Nuevos</span>
+                    <Badge variant="secondary">{metrics.leads.new}</Badge>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span>Contactados</span>
+                    <Badge variant="outline">{metrics.leads.contacted}</Badge>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span>Convertidos</span>
+                    <Badge className="bg-green-100 text-green-800">{metrics.leads.converted}</Badge>
+                  </div>
+                </div>
               </CardContent>
             </Card>
 
@@ -520,13 +359,99 @@ const Dashboard = () => {
                 <CardTitle>ROI por Fuente</CardTitle>
               </CardHeader>
               <CardContent>
+                <div className="space-y-3">
+                  {sourceData.map((source, index) => {
+                    const roi = ((source.conversions * 1000000 - source.cost) / source.cost * 100).toFixed(1);
+                    return (
+                      <div key={index} className="flex justify-between items-center">
+                        <span className="text-sm">{source.name}</span>
+                        <span className={`text-sm font-medium ${parseFloat(roi) > 0 ? 'text-green-600' : 'text-red-600'}`}>
+                          {roi}%
+                        </span>
+                      </div>
+                    );
+                  })}
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <CardTitle>Meta Mensual</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  <div>
+                    <div className="flex justify-between text-sm mb-2">
+                      <span>Ingresos</span>
+                      <span>{formatCurrency(metrics.revenue.monthly)} / {formatCurrency(metrics.revenue.target)}</span>
+                    </div>
+                    <Progress value={(metrics.revenue.monthly / metrics.revenue.target) * 100} />
+                  </div>
+                  <div className="text-center">
+                    <span className="text-2xl font-bold">
+                      {((metrics.revenue.monthly / metrics.revenue.target) * 100).toFixed(1)}%
+                    </span>
+                    <p className="text-sm text-gray-600">de la meta alcanzada</p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        </TabsContent>
+
+        <TabsContent value="advisors">
+          <Card>
+            <CardHeader>
+              <CardTitle>Rendimiento Detallado de Asesores</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <ResponsiveContainer width="100%" height={400}>
+                <BarChart data={advisorPerformance}>
+                  <CartesianGrid strokeDasharray="3 3" />
+                  <XAxis dataKey="name" />
+                  <YAxis />
+                  <Tooltip />
+                  <Legend />
+                  <Bar dataKey="calls" fill="#3b82f6" name="Llamadas" />
+                  <Bar dataKey="conversions" fill="#10b981" name="Conversiones" />
+                </BarChart>
+              </ResponsiveContainer>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="campaigns">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <Card>
+              <CardHeader>
+                <CardTitle>Costo por Lead</CardTitle>
+              </CardHeader>
+              <CardContent>
                 <ResponsiveContainer width="100%" height={300}>
-                  <BarChart data={dashboardData.conversionBySource}>
+                  <BarChart data={sourceData}>
                     <CartesianGrid strokeDasharray="3 3" />
-                    <XAxis dataKey="source" />
+                    <XAxis dataKey="name" />
                     <YAxis />
-                    <Tooltip formatter={(value) => [`${value}%`, 'ROI']} />
-                    <Bar dataKey="roi" fill="#82ca9d" />
+                    <Tooltip formatter={(value) => formatCurrency(value / 1000)} />
+                    <Bar dataKey="cost" fill="#f59e0b" />
+                  </BarChart>
+                </ResponsiveContainer>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <CardTitle>Conversiones por Fuente</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <ResponsiveContainer width="100%" height={300}>
+                  <BarChart data={sourceData}>
+                    <CartesianGrid strokeDasharray="3 3" />
+                    <XAxis dataKey="name" />
+                    <YAxis />
+                    <Tooltip />
+                    <Bar dataKey="conversions" fill="#10b981" />
                   </BarChart>
                 </ResponsiveContainer>
               </CardContent>
@@ -534,117 +459,28 @@ const Dashboard = () => {
           </div>
         </TabsContent>
 
-        {/* Rendimiento de Cursos */}
-        <TabsContent value="courses" className="space-y-6">
-          <Card>
-            <CardHeader>
-              <CardTitle>Performance por Curso</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                {dashboardData.coursesPerformance.map((course, index) => (
-                  <div key={index} className="border rounded-lg p-4">
-                    <div className="flex justify-between items-start mb-3">
-                      <div>
-                        <h4 className="font-medium">{course.course}</h4>
-                        <p className="text-sm text-gray-600">{course.leads} leads • {course.sales} ventas</p>
-                      </div>
-                      <Badge variant="outline">
-                        {course.conversion}% conversión
-                      </Badge>
-                    </div>
-                    <div className="grid grid-cols-3 gap-4">
-                      <div>
-                        <p className="text-sm text-gray-600">Ingresos</p>
-                        <p className="font-bold">${(course.revenue / 1000000).toFixed(1)}M</p>
-                      </div>
-                      <div>
-                        <p className="text-sm text-gray-600">Avg. Ticket</p>
-                        <p className="font-bold">${(course.revenue / course.sales / 1000).toFixed(0)}K</p>
-                      </div>
-                      <div>
-                        <p className="text-sm text-gray-600">Tendencia</p>
-                        <p className="font-bold text-green-600">↗ +12%</p>
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
-
-        {/* Analytics Avanzado */}
-        <TabsContent value="analytics" className="space-y-6">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <TabsContent value="analytics">
+          <div className="space-y-6">
             <Card>
               <CardHeader>
-                <CardTitle>Tendencias Semanales</CardTitle>
+                <CardTitle>Tendencia de Conversión</CardTitle>
               </CardHeader>
               <CardContent>
-                <ResponsiveContainer width="100%" height={300}>
-                  <LineChart data={dashboardData.weeklyTrends}>
+                <ResponsiveContainer width="100%" height={400}>
+                  <LineChart data={dailyTrends}>
                     <CartesianGrid strokeDasharray="3 3" />
-                    <XAxis dataKey="day" />
+                    <XAxis dataKey="time" />
                     <YAxis />
                     <Tooltip />
-                    <Line type="monotone" dataKey="leads" stroke="#8884d8" strokeWidth={2} />
-                    <Line type="monotone" dataKey="conversions" stroke="#82ca9d" strokeWidth={2} />
+                    <Legend />
+                    <Line type="monotone" dataKey="conversions" stroke="#10b981" strokeWidth={3} />
                   </LineChart>
                 </ResponsiveContainer>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader>
-                <CardTitle>Heatmap de Actividad</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="grid grid-cols-7 gap-1">
-                  {Array.from({ length: 24 * 7 }, (_, i) => {
-                    const intensity = Math.random();
-                    return (
-                      <div
-                        key={i}
-                        className={`w-4 h-4 rounded-sm ${
-                          intensity > 0.7 ? 'bg-green-500' :
-                          intensity > 0.5 ? 'bg-green-400' :
-                          intensity > 0.3 ? 'bg-green-300' :
-                          intensity > 0.1 ? 'bg-green-200' :
-                          'bg-gray-100'
-                        }`}
-                        title={`Actividad: ${Math.floor(intensity * 100)}%`}
-                      />
-                    );
-                  })}
-                </div>
-                <div className="flex justify-between mt-2 text-xs text-gray-500">
-                  <span>Dom</span>
-                  <span>Lun</span>
-                  <span>Mar</span>
-                  <span>Mié</span>
-                  <span>Jue</span>
-                  <span>Vie</span>
-                  <span>Sáb</span>
-                </div>
               </CardContent>
             </Card>
           </div>
         </TabsContent>
       </Tabs>
-
-      {/* Panel de acciones rápidas flotante */}
-      <div className="fixed bottom-6 right-6 space-y-2">
-        <Button className="w-12 h-12 rounded-full shadow-lg" size="sm">
-          <Plus className="h-5 w-5" />
-        </Button>
-        <Button variant="secondary" className="w-12 h-12 rounded-full shadow-lg" size="sm">
-          <Phone className="h-5 w-5" />
-        </Button>
-        <Button variant="outline" className="w-12 h-12 rounded-full shadow-lg" size="sm">
-          <MessageSquare className="h-5 w-5" />
-        </Button>
-      </div>
     </div>
   );
 };
