@@ -10,14 +10,12 @@ import {
   Play, 
   Pause, 
   Star, 
-  FileText, 
   TrendingUp, 
   TrendingDown,
   Headphones,
   MessageSquare,
   CheckCircle,
   XCircle,
-  Clock,
   BarChart3
 } from 'lucide-react';
 
@@ -145,7 +143,6 @@ const QualityMonitoring = () => {
         </TabsList>
 
         <TabsContent value="monitoring" className="space-y-6">
-          {/* Lista de llamadas para revisar */}
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
@@ -193,7 +190,6 @@ const QualityMonitoring = () => {
                             </DialogHeader>
                             {selectedCall && (
                               <div className="space-y-6">
-                                {/* Información de la llamada */}
                                 <div className="grid grid-cols-2 gap-4">
                                   <div>
                                     <h4 className="font-medium mb-2">Información de la Llamada</h4>
@@ -225,7 +221,6 @@ const QualityMonitoring = () => {
                                   </div>
                                 </div>
 
-                                {/* Evaluación de calidad */}
                                 <div>
                                   <h4 className="font-medium mb-4">Evaluación de Calidad</h4>
                                   <div className="grid grid-cols-2 gap-4">
@@ -252,7 +247,6 @@ const QualityMonitoring = () => {
                                   </div>
                                 </div>
 
-                                {/* Retroalimentación */}
                                 <div>
                                   <h4 className="font-medium mb-2">Retroalimentación</h4>
                                   <div className="p-4 border rounded-lg">
@@ -281,7 +275,6 @@ const QualityMonitoring = () => {
         </TabsContent>
 
         <TabsContent value="metrics" className="space-y-6">
-          {/* Métricas de calidad por asesor */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             {qualityMetrics.map((metric, index) => (
               <Card key={index}>
@@ -350,7 +343,6 @@ const QualityMonitoring = () => {
         </TabsContent>
 
         <TabsContent value="reports" className="space-y-6">
-          {/* Reportes de calidad */}
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
@@ -398,7 +390,7 @@ const QualityMonitoring = () => {
                       <span className="text-sm w-12">15%</span>
                     </div>
                     <div className="flex items-center gap-4">
-                      <span className="text-sm w-24">Deficiente (<70%)</span>
+                      <span className="text-sm w-24">Deficiente (&lt;70%)</span>
                       <Progress value={5} className="flex-1" />
                       <span className="text-sm w-12">5%</span>
                     </div>
