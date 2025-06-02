@@ -1,3 +1,4 @@
+
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -18,6 +19,7 @@ import LeadFollowUp from "./components/LeadFollowUp";
 import PromotionsManagement from "./components/PromotionsManagement";
 import LeadProfile from "./pages/LeadProfile";
 import CampaignAnalytics from "./pages/CampaignAnalytics";
+import QualityManagement from "./pages/QualityManagement";
 
 const queryClient = new QueryClient();
 
@@ -39,6 +41,7 @@ const App = () => (
               <Route path="/campaigns/analytics" element={<CampaignAnalytics />} />
               <Route path="/reports" element={<Reports />} />
               <Route path="/communication" element={<Communication />} />
+              <Route path="/quality" element={<QualityManagement />} />
               <Route path="/advisor-performance" element={<AdvisorPerformance />} />
               <Route path="/lead-follow-up/:leadId" element={<LeadFollowUp leadId={1} leadData={{ name: 'Lead Ejemplo' }} />} />
               <Route path="/promotions" element={<PromotionsManagement />} />
