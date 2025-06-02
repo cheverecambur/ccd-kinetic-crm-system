@@ -26,7 +26,7 @@ import {
   Filter,
   Download
 } from 'lucide-react';
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, BarChart, Bar, PieChart as RechartsPieChart, Cell, AreaChart, Area } from 'recharts';
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, BarChart, Bar, PieChart as RechartsPieChart, Cell, AreaChart, Area, Pie } from 'recharts';
 
 const Dashboard = () => {
   const [dateRange, setDateRange] = useState('today');
@@ -99,7 +99,7 @@ const Dashboard = () => {
     setTimeout(() => setRefreshing(false), 2000);
   };
 
-  const formatCurrency = (amount) => {
+  const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('es-CO', {
       style: 'currency',
       currency: 'COP',
@@ -433,7 +433,7 @@ const Dashboard = () => {
                     <CartesianGrid strokeDasharray="3 3" />
                     <XAxis dataKey="name" />
                     <YAxis />
-                    <Tooltip formatter={(value) => formatCurrency(value / 1000)} />
+                    <Tooltip formatter={(value) => formatCurrency(Number(value) / 1000)} />
                     <Bar dataKey="cost" fill="#f59e0b" />
                   </BarChart>
                 </ResponsiveContainer>

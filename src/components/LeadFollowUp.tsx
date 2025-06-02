@@ -70,7 +70,19 @@ interface LeadStage {
   averageTime: number; // días promedio en esta etapa
 }
 
-const LeadFollowUp = ({ leadId, leadData }: { leadId: number; leadData: any }) => {
+interface TimelineItem {
+  id: string;
+  date: string;
+  title: string;
+  content: string;
+  type: string;
+  author?: string;
+  isPrivate?: boolean;
+  tags?: string[];
+  result?: string;
+}
+
+const LeadFollowUp = ({ leadId = 1, leadData = { name: 'Lead Ejemplo' } }: { leadId?: number; leadData?: any }) => {
   const [tasks, setTasks] = useState<FollowUpTask[]>([]);
   const [observations, setObservations] = useState<LeadObservation[]>([]);
   const [currentStage, setCurrentStage] = useState<string>('prospecting');
@@ -282,6 +294,42 @@ const LeadFollowUp = ({ leadId, leadData }: { leadId: number; leadData: any }) =
   const currentStageData = leadStages.find(s => s.id === currentStage);
   const pendingTasks = tasks.filter(t => t.status === 'pending');
   const overdueTasks = tasks.filter(t => t.status === 'pending' && isOverdue(t.dueDate, t.dueTime));
+
+  // Crear timeline unificado
+  const createTimelineItems = (): TimelineItem[] => {
+    const timelineItems: TimelineItem[] = [];
+
+    // Agregar observaciones
+    observations.forEach(obs => {
+      timelineItems.push({
+        id: `obs-${obs.id}`,
+        date: obs.date,
+        title: obs.author,
+        content: obs.content,
+        type: obs.type,
+        author: obs.author,
+        isPrivate: obs.isPrivate,
+        tags: obs.tags
+      });
+    });
+
+    // Agregar tareas completadas
+    tasks.filter(t => t.status === 'completed' && t.completedAt).forEach(task => {
+      timelineItems.push({
+        id: `task-${task.id}`,
+        date: task.completedAt!,
+        title: task.title,
+        content: task.description,
+        type: task.type,
+        result: task.result
+      });
+    });
+
+    // Ordenar por fecha descendente
+    return timelineItems.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+  };
+
+  const timelineItems = createTimelineItems();
 
   return (
     <div className="p-6 space-y-6">
@@ -540,43 +588,37 @@ const LeadFollowUp = ({ leadId, leadData }: { leadId: number; leadData: any }) =
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
-                {observations.concat(tasks.filter(t => t.status === 'completed'))
-                  .sort((a, b) => new Date(b.date || b.completedAt || '').getTime() - new Date(a.date || a.completedAt || '').getTime())
-                  .map((item, index) => (
-                    <div key={`${item.id}-${index}`} className="flex gap-4 p-4 border rounded-lg">
-                      <div className="mt-1">
-                        {'type' in item ? getTypeIcon(item.type) : getTypeIcon('note')}
-                      </div>
-                      <div className="flex-1">
-                        <div className="flex items-center gap-2 mb-2">
-                          <span className="font-medium">
-                            {'title' in item ? item.title : ('author' in item ? item.author : 'Sistema')}
-                          </span>
-                          <span className="text-xs text-gray-500">
-                            {formatDate('date' in item ? item.date : item.completedAt || '')}
-                          </span>
-                          {'isPrivate' in item && item.isPrivate && (
-                            <Badge variant="outline" className="text-xs">Privado</Badge>
-                          )}
-                        </div>
-                        <p className="text-sm text-gray-700">
-                          {'content' in item ? item.content : item.description}
-                        </p>
-                        {'result' in item && item.result && (
-                          <p className="text-sm text-green-600 mt-1">Resultado: {item.result}</p>
-                        )}
-                        {'tags' in item && item.tags && (
-                          <div className="flex gap-1 mt-2">
-                            {item.tags.map((tag, tagIndex) => (
-                              <Badge key={tagIndex} variant="secondary" className="text-xs">
-                                {tag}
-                              </Badge>
-                            ))}
-                          </div>
-                        )}
-                      </div>
+                {timelineItems.map((item) => (
+                  <div key={item.id} className="flex gap-4 p-4 border rounded-lg">
+                    <div className="mt-1">
+                      {getTypeIcon(item.type)}
                     </div>
-                  ))}
+                    <div className="flex-1">
+                      <div className="flex items-center gap-2 mb-2">
+                        <span className="font-medium">{item.title}</span>
+                        <span className="text-xs text-gray-500">
+                          {formatDate(item.date)}
+                        </span>
+                        {item.isPrivate && (
+                          <Badge variant="outline" className="text-xs">Privado</Badge>
+                        )}
+                      </div>
+                      <p className="text-sm text-gray-700">{item.content}</p>
+                      {item.result && (
+                        <p className="text-sm text-green-600 mt-1">Resultado: {item.result}</p>
+                      )}
+                      {item.tags && (
+                        <div className="flex gap-1 mt-2">
+                          {item.tags.map((tag, tagIndex) => (
+                            <Badge key={tagIndex} variant="secondary" className="text-xs">
+                              {tag}
+                            </Badge>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                ))}
               </div>
             </CardContent>
           </Card>
