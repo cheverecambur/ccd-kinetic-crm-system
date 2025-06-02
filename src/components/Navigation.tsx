@@ -1,8 +1,9 @@
 
 import React from 'react';
-import { Link, useLocation } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { useAuth } from '@/contexts/AuthContext';
 import { 
   LayoutDashboard,
   Users,
@@ -15,58 +16,80 @@ import {
   User,
   Search,
   Menu,
-  X
+  X,
+  LogOut,
+  Headphones,
+  TrendingUp
 } from 'lucide-react';
 import { useState } from 'react';
 
 const Navigation = () => {
   const location = useLocation();
+  const navigate = useNavigate();
+  const { user, logout } = useAuth();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
-  const navigationItems = [
-    { 
-      name: 'Dashboard', 
-      href: '/', 
-      icon: LayoutDashboard,
-      badge: null
-    },
-    { 
-      name: 'Leads', 
-      href: '/leads', 
-      icon: Users,
-      badge: '24'
-    },
-    { 
-      name: 'Call Center', 
-      href: '/callcenter', 
-      icon: Phone,
-      badge: '12'
-    },
-    { 
-      name: 'Campañas', 
-      href: '/campaigns', 
-      icon: Target,
-      badge: null
-    },
-    { 
-      name: 'Reportes', 
-      href: '/reports', 
-      icon: BarChart3,
-      badge: null
-    },
-    { 
-      name: 'Comunicación', 
-      href: '/communication', 
-      icon: MessageSquare,
-      badge: '8'
+  const getNavigationItems = () => {
+    if (!user) return [];
+
+    const baseItems = [
+      { 
+        name: 'Dashboard', 
+        href: user.role === 'ADMIN' ? '/admin' : (user.role === 'AGENT' ? '/agent' : '/'), 
+        icon: LayoutDashboard,
+        badge: null
+      }
+    ];
+
+    if (user.role === 'ADMIN') {
+      return [
+        ...baseItems,
+        { name: 'Leads', href: '/leads', icon: Users, badge: '24' },
+        { name: 'Call Center', href: '/callcenter', icon: Phone, badge: '12' },
+        { name: 'Campañas', href: '/campaigns', icon: Target, badge: null },
+        { name: 'Reportes', href: '/reports', icon: BarChart3, badge: null },
+        { name: 'Calidad', href: '/quality', icon: Headphones, badge: '3' },
+        { name: 'Comunicación', href: '/communication', icon: MessageSquare, badge: '8' }
+      ];
+    } else if (user.role === 'SUPERVISOR') {
+      return [
+        ...baseItems,
+        { name: 'Leads Equipo', href: '/leads', icon: Users, badge: '24' },
+        { name: 'Call Center', href: '/callcenter', icon: Phone, badge: '12' },
+        { name: 'Calidad', href: '/quality', icon: Headphones, badge: '3' },
+        { name: 'Reportes', href: '/reports', icon: BarChart3, badge: null }
+      ];
+    } else {
+      return [
+        ...baseItems,
+        { name: 'Mis Leads', href: '/leads', icon: Users, badge: '8' },
+        { name: 'Call Center', href: '/callcenter', icon: Phone, badge: '3' },
+        { name: 'Mi Rendimiento', href: '/advisor-performance', icon: TrendingUp, badge: null }
+      ];
     }
-  ];
+  };
+
+  const navigationItems = getNavigationItems();
 
   const isActive = (href: string) => {
-    if (href === '/') {
-      return location.pathname === '/';
+    if (href === '/' || href === '/admin' || href === '/agent') {
+      return location.pathname === href;
     }
     return location.pathname.startsWith(href);
+  };
+
+  const handleLogout = () => {
+    logout();
+    navigate('/login');
+  };
+
+  const getRoleBadge = () => {
+    const roleColors = {
+      'ADMIN': 'bg-red-500',
+      'SUPERVISOR': 'bg-blue-500',
+      'AGENT': 'bg-green-500'
+    };
+    return roleColors[user?.role || 'AGENT'];
   };
 
   return (
@@ -134,10 +157,18 @@ const Navigation = () => {
             </Button>
             
             {/* User menu */}
-            <Button variant="ghost" size="sm">
-              <User className="h-4 w-4 mr-2" />
-              Carlos R.
-            </Button>
+            <div className="flex items-center space-x-2">
+              <Badge className={getRoleBadge()}>
+                {user?.role}
+              </Badge>
+              <Button variant="ghost" size="sm">
+                <User className="h-4 w-4 mr-2" />
+                {user?.name}
+              </Button>
+              <Button variant="ghost" size="sm" onClick={handleLogout}>
+                <LogOut className="h-4 w-4" />
+              </Button>
+            </div>
           </div>
         </div>
       </nav>
@@ -152,6 +183,9 @@ const Navigation = () => {
                 <span className="text-white font-bold text-sm">CCD</span>
               </div>
               <span className="font-bold text-lg text-gray-900">CRM</span>
+              <Badge className={`${getRoleBadge()} text-xs`}>
+                {user?.role}
+              </Badge>
             </div>
 
             {/* Mobile menu button */}
@@ -208,9 +242,8 @@ const Navigation = () => {
                 <div className="flex items-center justify-between px-3 py-2">
                   <div className="flex items-center space-x-3">
                     <User className="h-5 w-5 text-gray-600" />
-                    <span className="font-medium text-gray-900">Carlos Rodríguez</span>
+                    <span className="font-medium text-gray-900">{user?.name}</span>
                   </div>
-                  <Badge variant="outline">Asesor</Badge>
                 </div>
                 <div className="flex space-x-1 px-3">
                   <Button variant="ghost" size="sm" className="flex-1">
@@ -220,6 +253,10 @@ const Navigation = () => {
                   <Button variant="ghost" size="sm" className="flex-1">
                     <Settings className="h-4 w-4 mr-2" />
                     Config.
+                  </Button>
+                  <Button variant="ghost" size="sm" className="flex-1" onClick={handleLogout}>
+                    <LogOut className="h-4 w-4 mr-2" />
+                    Salir
                   </Button>
                 </div>
               </div>

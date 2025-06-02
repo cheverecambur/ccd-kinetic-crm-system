@@ -4,9 +4,14 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { AuthProvider } from "./contexts/AuthContext";
 import Navigation from "./components/Navigation";
 import QuickActions from "./components/QuickActions";
+import ProtectedRoute from "./components/ProtectedRoute";
+import Login from "./pages/Login";
 import Dashboard from "./pages/Dashboard";
+import AdminPanel from "./pages/AdminPanel";
+import AgentDashboard from "./pages/AgentDashboard";
 import LeadsManagement from "./pages/LeadsManagement";
 import CallCenter from "./pages/CallCenter";
 import CampaignManagement from "./pages/CampaignManagement";
@@ -28,30 +33,68 @@ const App = () => (
     <TooltipProvider>
       <Toaster />
       <Sonner />
-      <BrowserRouter>
-        <div className="min-h-screen bg-gray-50">
-          <Navigation />
-          <main className="relative">
-            <Routes>
-              <Route path="/" element={<Dashboard />} />
-              <Route path="/leads" element={<LeadsManagement />} />
-              <Route path="/leads/:leadId" element={<LeadProfile />} />
-              <Route path="/callcenter" element={<CallCenter />} />
-              <Route path="/campaigns" element={<CampaignManagement />} />
-              <Route path="/campaigns/analytics" element={<CampaignAnalytics />} />
-              <Route path="/reports" element={<Reports />} />
-              <Route path="/communication" element={<Communication />} />
-              <Route path="/quality" element={<QualityManagement />} />
-              <Route path="/advisor-performance" element={<AdvisorPerformance />} />
-              <Route path="/lead-follow-up/:leadId" element={<LeadFollowUp leadId={1} leadData={{ name: 'Lead Ejemplo' }} />} />
-              <Route path="/promotions" element={<PromotionsManagement />} />
-              {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-              <Route path="*" element={<NotFound />} />
-            </Routes>
-            <QuickActions />
-          </main>
-        </div>
-      </BrowserRouter>
+      <AuthProvider>
+        <BrowserRouter>
+          <Routes>
+            <Route path="/login" element={<Login />} />
+            <Route path="/*" element={
+              <ProtectedRoute>
+                <div className="min-h-screen bg-gray-50">
+                  <Navigation />
+                  <main className="relative">
+                    <Routes>
+                      <Route path="/" element={<Dashboard />} />
+                      <Route path="/admin" element={
+                        <ProtectedRoute allowedRoles={['ADMIN']}>
+                          <AdminPanel />
+                        </ProtectedRoute>
+                      } />
+                      <Route path="/agent" element={
+                        <ProtectedRoute allowedRoles={['AGENT']}>
+                          <AgentDashboard />
+                        </ProtectedRoute>
+                      } />
+                      <Route path="/leads" element={<LeadsManagement />} />
+                      <Route path="/leads/:leadId" element={<LeadProfile />} />
+                      <Route path="/callcenter" element={<CallCenter />} />
+                      <Route path="/campaigns" element={
+                        <ProtectedRoute allowedRoles={['ADMIN', 'SUPERVISOR']}>
+                          <CampaignManagement />
+                        </ProtectedRoute>
+                      } />
+                      <Route path="/campaigns/analytics" element={
+                        <ProtectedRoute allowedRoles={['ADMIN', 'SUPERVISOR']}>
+                          <CampaignAnalytics />
+                        </ProtectedRoute>
+                      } />
+                      <Route path="/reports" element={
+                        <ProtectedRoute allowedRoles={['ADMIN', 'SUPERVISOR']}>
+                          <Reports />
+                        </ProtectedRoute>
+                      } />
+                      <Route path="/communication" element={<Communication />} />
+                      <Route path="/quality" element={
+                        <ProtectedRoute allowedRoles={['ADMIN', 'SUPERVISOR']}>
+                          <QualityManagement />
+                        </ProtectedRoute>
+                      } />
+                      <Route path="/advisor-performance" element={<AdvisorPerformance />} />
+                      <Route path="/lead-follow-up/:leadId" element={<LeadFollowUp leadId={1} leadData={{ name: 'Lead Ejemplo' }} />} />
+                      <Route path="/promotions" element={
+                        <ProtectedRoute allowedRoles={['ADMIN', 'SUPERVISOR']}>
+                          <PromotionsManagement />
+                        </ProtectedRoute>
+                      } />
+                      <Route path="*" element={<NotFound />} />
+                    </Routes>
+                    <QuickActions />
+                  </main>
+                </div>
+              </ProtectedRoute>
+            } />
+          </Routes>
+        </BrowserRouter>
+      </AuthProvider>
     </TooltipProvider>
   </QueryClientProvider>
 );
