@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -30,6 +29,7 @@ import {
   DollarSign
 } from 'lucide-react';
 import { useToast } from "@/hooks/use-toast";
+import { useNavigate } from 'react-router-dom';
 
 interface Lead {
   id: string;
@@ -46,6 +46,10 @@ interface Lead {
   assignedTo: string;
   value: number;
   stage: string;
+  campaignCode: string;
+  totalInteractions: number;
+  promotionsShown: number;
+  activations: number;
 }
 
 const LeadsManagement = () => {
@@ -58,8 +62,9 @@ const LeadsManagement = () => {
   const [selectedLeads, setSelectedLeads] = useState<string[]>([]);
   const [newLeadOpen, setNewLeadOpen] = useState(false);
   const { toast } = useToast();
+  const navigate = useNavigate();
 
-  // Datos simulados
+  // Datos simulados mejorados
   useEffect(() => {
     const sampleLeads: Lead[] = [
       {
@@ -68,7 +73,7 @@ const LeadsManagement = () => {
         email: 'carlos.gonzalez@email.com',
         phone: '+57 301 234 5678',
         source: 'Meta Ads',
-        status: 'nuevo',
+        status: 'qualified',
         score: 85,
         city: 'Bogotá',
         interests: ['Excel Avanzado', 'Power BI'],
@@ -76,7 +81,11 @@ const LeadsManagement = () => {
         lastContact: '2024-01-26T10:30:00Z',
         assignedTo: 'María García',
         value: 1200000,
-        stage: 'prospecting'
+        stage: 'proposal',
+        campaignCode: 'META_EXCEL_2024_Q1',
+        totalInteractions: 8,
+        promotionsShown: 3,
+        activations: 1
       },
       {
         id: '2',
@@ -84,7 +93,7 @@ const LeadsManagement = () => {
         email: 'ana.lopez@company.com',
         phone: '+57 320 987 6543',
         source: 'TikTok Ads',
-        status: 'contactado',
+        status: 'contacted',
         score: 92,
         city: 'Medellín',
         interests: ['Contabilidad Digital', 'Excel'],
@@ -92,7 +101,11 @@ const LeadsManagement = () => {
         lastContact: '2024-01-26T09:15:00Z',
         assignedTo: 'Carlos Rodríguez',
         value: 1800000,
-        stage: 'contacted'
+        stage: 'contacted',
+        campaignCode: 'TIKTOK_CONT_2024_Q1',
+        totalInteractions: 12,
+        promotionsShown: 4,
+        activations: 0
       },
       {
         id: '3',
@@ -100,7 +113,7 @@ const LeadsManagement = () => {
         email: 'luis.torres@gmail.com',
         phone: '+57 315 456 7890',
         source: 'Google Ads',
-        status: 'calificado',
+        status: 'qualified',
         score: 78,
         city: 'Cali',
         interests: ['Project Management'],
@@ -108,7 +121,11 @@ const LeadsManagement = () => {
         lastContact: '2024-01-25T11:30:00Z',
         assignedTo: 'Diana Morales',
         value: 2100000,
-        stage: 'qualified'
+        stage: 'qualified',
+        campaignCode: 'GOOGLE_MIXED_2024_Q1',
+        totalInteractions: 6,
+        promotionsShown: 2,
+        activations: 0
       },
       {
         id: '4',
@@ -116,7 +133,7 @@ const LeadsManagement = () => {
         email: 'patricia.ramirez@hotmail.com',
         phone: '+57 310 789 0123',
         source: 'Instagram',
-        status: 'propuesta',
+        status: 'proposal',
         score: 95,
         city: 'Barranquilla',
         interests: ['Finanzas Corporativas', 'Excel Avanzado'],
@@ -124,7 +141,11 @@ const LeadsManagement = () => {
         lastContact: '2024-01-26T08:45:00Z',
         assignedTo: 'Roberto Silva',
         value: 2500000,
-        stage: 'proposal'
+        stage: 'proposal',
+        campaignCode: 'INSTA_PROJECT_2024_Q1',
+        totalInteractions: 15,
+        promotionsShown: 5,
+        activations: 2
       }
     ];
 
@@ -132,7 +153,6 @@ const LeadsManagement = () => {
     setFilteredLeads(sampleLeads);
   }, []);
 
-  // Filtros y búsqueda
   useEffect(() => {
     let filtered = leads;
 
@@ -142,7 +162,8 @@ const LeadsManagement = () => {
         lead.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
         lead.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
         lead.phone.includes(searchTerm) ||
-        lead.city.toLowerCase().includes(searchTerm.toLowerCase())
+        lead.city.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        lead.campaignCode.toLowerCase().includes(searchTerm.toLowerCase())
       );
     }
 
@@ -167,6 +188,8 @@ const LeadsManagement = () => {
           return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
         case 'value':
           return b.value - a.value;
+        case 'interactions':
+          return b.totalInteractions - a.totalInteractions;
         default:
           return 0;
       }
@@ -183,12 +206,12 @@ const LeadsManagement = () => {
 
   const getStatusColor = (status: string) => {
     const colors = {
-      nuevo: 'bg-blue-100 text-blue-800',
-      contactado: 'bg-yellow-100 text-yellow-800',
-      calificado: 'bg-purple-100 text-purple-800',
-      propuesta: 'bg-orange-100 text-orange-800',
-      convertido: 'bg-green-100 text-green-800',
-      perdido: 'bg-red-100 text-red-800'
+      new: 'bg-blue-100 text-blue-800',
+      contacted: 'bg-yellow-100 text-yellow-800',
+      qualified: 'bg-purple-100 text-purple-800',
+      proposal: 'bg-orange-100 text-orange-800',
+      activated: 'bg-green-100 text-green-800',
+      lost: 'bg-red-100 text-red-800'
     };
     return colors[status as keyof typeof colors] || 'bg-gray-100 text-gray-800';
   };
@@ -224,11 +247,8 @@ const LeadsManagement = () => {
     window.open(`https://wa.me/${cleanPhone}?text=${message}`, '_blank');
   };
 
-  const handleCallback = (lead: Lead) => {
-    toast({
-      title: "Callback programado",
-      description: `Se ha programado un callback para ${lead.name}`,
-    });
+  const handleViewProfile = (lead: Lead) => {
+    navigate(`/leads/${lead.id}`);
   };
 
   const handleBulkAction = (action: string) => {
@@ -305,6 +325,10 @@ const LeadsManagement = () => {
                   <Input placeholder="Bogotá" />
                 </div>
                 <div>
+                  <Label>Código de Campaña</Label>
+                  <Input placeholder="META_EXCEL_2024_Q1" />
+                </div>
+                <div>
                   <Label>Fuente</Label>
                   <Select>
                     <SelectTrigger>
@@ -333,7 +357,6 @@ const LeadsManagement = () => {
         </div>
       </div>
 
-      {/* Métricas rápidas */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
         <Card>
           <CardContent className="pt-6">
@@ -379,12 +402,9 @@ const LeadsManagement = () => {
           <CardContent className="pt-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-gray-600">Nuevos Hoy</p>
+                <p className="text-sm text-gray-600">Activaciones</p>
                 <p className="text-2xl font-bold">
-                  {leads.filter(lead => {
-                    const today = new Date().toDateString();
-                    return new Date(lead.createdAt).toDateString() === today;
-                  }).length}
+                  {leads.reduce((sum, lead) => sum + lead.activations, 0)}
                 </p>
               </div>
               <TrendingUp className="h-8 w-8 text-purple-600" />
@@ -396,7 +416,7 @@ const LeadsManagement = () => {
       {/* Filtros y búsqueda */}
       <Card>
         <CardContent className="pt-6">
-          <div className="grid grid-cols-1 md:grid-cols-5 gap-4 mb-4">
+          <div className="grid grid-cols-1 md:grid-cols-6 gap-4 mb-4">
             <div className="relative">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
               <Input
@@ -427,12 +447,12 @@ const LeadsManagement = () => {
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">Todos los estados</SelectItem>
-                <SelectItem value="nuevo">Nuevo</SelectItem>
-                <SelectItem value="contactado">Contactado</SelectItem>
-                <SelectItem value="calificado">Calificado</SelectItem>
-                <SelectItem value="propuesta">Propuesta</SelectItem>
-                <SelectItem value="convertido">Convertido</SelectItem>
-                <SelectItem value="perdido">Perdido</SelectItem>
+                <SelectItem value="new">Nuevo</SelectItem>
+                <SelectItem value="contacted">Contactado</SelectItem>
+                <SelectItem value="qualified">Calificado</SelectItem>
+                <SelectItem value="proposal">Propuesta</SelectItem>
+                <SelectItem value="activated">Activado</SelectItem>
+                <SelectItem value="lost">Perdido</SelectItem>
               </SelectContent>
             </Select>
 
@@ -445,6 +465,7 @@ const LeadsManagement = () => {
                 <SelectItem value="name">Nombre (A-Z)</SelectItem>
                 <SelectItem value="created">Fecha creación</SelectItem>
                 <SelectItem value="value">Valor potencial</SelectItem>
+                <SelectItem value="interactions">Interacciones</SelectItem>
               </SelectContent>
             </Select>
 
@@ -486,7 +507,7 @@ const LeadsManagement = () => {
         </CardContent>
       </Card>
 
-      {/* Tabla de leads */}
+      {/* Tabla de leads mejorada */}
       <Card>
         <CardContent className="pt-6">
           <div className="overflow-x-auto">
@@ -502,12 +523,12 @@ const LeadsManagement = () => {
                   </th>
                   <th className="text-left p-3">Lead</th>
                   <th className="text-left p-3">Contacto</th>
-                  <th className="text-left p-3">Fuente</th>
+                  <th className="text-left p-3">Campaña</th>
                   <th className="text-left p-3">Estado</th>
                   <th className="text-left p-3">Score</th>
+                  <th className="text-left p-3">Actividad</th>
                   <th className="text-left p-3">Valor</th>
                   <th className="text-left p-3">Asignado</th>
-                  <th className="text-left p-3">Último Contacto</th>
                   <th className="text-left p-3">Acciones</th>
                 </tr>
               </thead>
@@ -537,7 +558,12 @@ const LeadsManagement = () => {
                       </div>
                     </td>
                     <td className="p-3">
-                      <Badge variant="outline">{lead.source}</Badge>
+                      <div>
+                        <Badge variant="outline">{lead.source}</Badge>
+                        <div className="text-xs text-gray-600 mt-1 font-mono">
+                          {lead.campaignCode}
+                        </div>
+                      </div>
                     </td>
                     <td className="p-3">
                       <Badge className={getStatusColor(lead.status)} variant="secondary">
@@ -550,13 +576,17 @@ const LeadsManagement = () => {
                       </div>
                     </td>
                     <td className="p-3">
+                      <div className="text-sm">
+                        <div>{lead.totalInteractions} interacciones</div>
+                        <div className="text-gray-600">{lead.promotionsShown} promociones</div>
+                        <div className="text-green-600">{lead.activations} activaciones</div>
+                      </div>
+                    </td>
+                    <td className="p-3">
                       <span className="font-medium">{formatCurrency(lead.value)}</span>
                     </td>
                     <td className="p-3">
                       <span className="text-sm">{lead.assignedTo}</span>
-                    </td>
-                    <td className="p-3">
-                      <span className="text-sm text-gray-600">{formatDate(lead.lastContact)}</span>
                     </td>
                     <td className="p-3">
                       <div className="flex gap-1">
@@ -566,10 +596,7 @@ const LeadsManagement = () => {
                         <Button size="sm" variant="outline" onClick={() => handleWhatsApp(lead)}>
                           <MessageSquare className="h-3 w-3" />
                         </Button>
-                        <Button size="sm" variant="outline" onClick={() => handleCallback(lead)}>
-                          <Calendar className="h-3 w-3" />
-                        </Button>
-                        <Button size="sm" variant="outline">
+                        <Button size="sm" variant="outline" onClick={() => handleViewProfile(lead)}>
                           <Eye className="h-3 w-3" />
                         </Button>
                       </div>
