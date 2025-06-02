@@ -17,7 +17,9 @@ import {
   Clock,
   AlertCircle,
   CheckCircle,
-  X
+  X,
+  Minimize2,
+  Maximize2
 } from 'lucide-react';
 import { useToast } from "@/hooks/use-toast";
 
@@ -25,19 +27,44 @@ const QuickActions = () => {
   const [showNewLead, setShowNewLead] = useState(false);
   const [showQuickCall, setShowQuickCall] = useState(false);
   const [showQuickSearch, setShowQuickSearch] = useState(false);
+  const [tasksMinimized, setTasksMinimized] = useState(false);
   const { toast } = useToast();
 
   // Datos de acciones rápidas
   const todayTasks = [
-    { id: 1, type: 'callback', contact: 'María González', time: '10:30', course: 'Contabilidad' },
-    { id: 2, type: 'callback', contact: 'Carlos Pérez', time: '14:00', course: 'Excel Avanzado' },
-    { id: 3, type: 'follow', contact: 'Ana López', time: '16:30', course: 'Marketing Digital' }
+    { 
+      id: 1, 
+      type: 'callback', 
+      contact: 'María González', 
+      phone: '+573012345678',
+      time: '10:30', 
+      course: 'Contabilidad',
+      priority: 'high'
+    },
+    { 
+      id: 2, 
+      type: 'callback', 
+      contact: 'Carlos Pérez', 
+      phone: '+573109876543',
+      time: '14:00', 
+      course: 'Excel Avanzado',
+      priority: 'medium'
+    },
+    { 
+      id: 3, 
+      type: 'follow', 
+      contact: 'Ana López', 
+      phone: '+573152468135',
+      time: '16:30', 
+      course: 'Marketing Digital',
+      priority: 'low'
+    }
   ];
 
   const recentLeads = [
-    { id: 1, name: 'Luis Martínez', phone: '3001234567', score: 95, source: 'Facebook' },
-    { id: 2, name: 'Sofia Torres', phone: '3109876543', score: 88, source: 'TikTok' },
-    { id: 3, name: 'Diego Ramírez', phone: '3152468135', score: 92, source: 'Google' }
+    { id: 1, name: 'Luis Martínez', phone: '+573001234567', score: 95, source: 'Facebook' },
+    { id: 2, name: 'Sofia Torres', phone: '+573109876543', score: 88, source: 'TikTok' },
+    { id: 3, name: 'Diego Ramírez', phone: '+573152468135', score: 92, source: 'Google' }
   ];
 
   const handleQuickCall = (phone: string, name: string) => {
@@ -49,8 +76,22 @@ const QuickActions = () => {
   };
 
   const handleQuickWhatsApp = (phone: string, name: string) => {
-    const message = encodeURIComponent(`Hola ${name}, soy de CCD Capacitación. ¿Tienes unos minutos para conversar?`);
-    window.open(`https://wa.me/57${phone}?text=${message}`, '_blank');
+    const cleanPhone = phone.replace(/\D/g, '');
+    const message = encodeURIComponent(`Hola ${name}, soy de CCD Capacitación. ¿Tienes unos minutos para conversar sobre nuestros cursos?`);
+    const whatsappUrl = `https://wa.me/${cleanPhone}?text=${message}`;
+    window.open(whatsappUrl, '_blank');
+    
+    toast({
+      title: "WhatsApp abierto",
+      description: `Mensaje enviado a ${name}`,
+    });
+  };
+
+  const markTaskCompleted = (taskId: number) => {
+    toast({
+      title: "Tarea completada",
+      description: "La tarea ha sido marcada como completada",
+    });
   };
 
   const NewLeadModal = () => (
@@ -95,7 +136,13 @@ const QuickActions = () => {
             </SelectContent>
           </Select>
           <div className="flex gap-2">
-            <Button className="flex-1">
+            <Button className="flex-1" onClick={() => {
+              toast({
+                title: "Lead creado",
+                description: "El nuevo lead ha sido agregado al sistema",
+              });
+              setShowNewLead(false);
+            }}>
               <Plus className="h-4 w-4 mr-2" />
               Crear Lead
             </Button>
@@ -129,9 +176,14 @@ const QuickActions = () => {
                   <p className="font-medium">{lead.name}</p>
                   <p className="text-sm text-gray-600">{lead.phone} • Score: {lead.score}</p>
                 </div>
-                <Button size="sm" onClick={() => handleQuickCall(lead.phone, lead.name)}>
-                  <Phone className="h-4 w-4" />
-                </Button>
+                <div className="flex gap-1">
+                  <Button size="sm" onClick={() => handleQuickCall(lead.phone, lead.name)}>
+                    <Phone className="h-4 w-4" />
+                  </Button>
+                  <Button size="sm" variant="outline" onClick={() => handleQuickWhatsApp(lead.phone, lead.name)}>
+                    <MessageSquare className="h-4 w-4" />
+                  </Button>
+                </div>
               </div>
             ))}
           </div>
@@ -165,10 +217,10 @@ const QuickActions = () => {
                   <p className="text-sm text-gray-600">{lead.phone} • {lead.source}</p>
                 </div>
                 <div className="flex gap-1">
-                  <Button size="sm" variant="outline">
+                  <Button size="sm" variant="outline" onClick={() => handleQuickCall(lead.phone, lead.name)}>
                     <Phone className="h-4 w-4" />
                   </Button>
-                  <Button size="sm" variant="outline">
+                  <Button size="sm" variant="outline" onClick={() => handleQuickWhatsApp(lead.phone, lead.name)}>
                     <MessageSquare className="h-4 w-4" />
                   </Button>
                 </div>
@@ -189,7 +241,7 @@ const QuickActions = () => {
       <div className="fixed bottom-6 right-6 z-40">
         <div className="flex flex-col gap-3">
           <Button
-            className="w-14 h-14 rounded-full shadow-lg"
+            className="w-14 h-14 rounded-full shadow-lg bg-blue-600 hover:bg-blue-700"
             onClick={() => setShowQuickSearch(true)}
             title="Búsqueda rápida"
           >
@@ -198,20 +250,11 @@ const QuickActions = () => {
           
           <Button
             variant="secondary"
-            className="w-14 h-14 rounded-full shadow-lg"
+            className="w-14 h-14 rounded-full shadow-lg bg-purple-600 hover:bg-purple-700 text-white"
             onClick={() => setShowQuickCall(true)}
             title="Llamada rápida"
           >
             <Phone className="h-6 w-6" />
-          </Button>
-          
-          <Button
-            variant="outline"
-            className="w-14 h-14 rounded-full shadow-lg bg-white"
-            onClick={() => handleQuickWhatsApp('3001234567', 'Lead')}
-            title="WhatsApp rápido"
-          >
-            <MessageSquare className="h-6 w-6" />
           </Button>
           
           <Button
@@ -224,46 +267,81 @@ const QuickActions = () => {
         </div>
       </div>
 
-      {/* Panel de tareas del día */}
-      <Card className="fixed bottom-6 left-6 w-80 z-30 shadow-lg">
+      {/* Panel de tareas del día - NO desaparece */}
+      <Card className={`fixed bottom-6 left-6 w-80 z-30 shadow-lg transition-all duration-300 ${
+        tasksMinimized ? 'h-16' : 'h-auto'
+      }`}>
         <CardHeader className="pb-3">
           <div className="flex items-center justify-between">
-            <CardTitle className="text-sm">Tareas de Hoy</CardTitle>
-            <Badge variant="outline">{todayTasks.length}</Badge>
+            <div className="flex items-center gap-2">
+              <CardTitle className="text-sm">Tareas de Hoy</CardTitle>
+              <Badge variant="outline">{todayTasks.length}</Badge>
+            </div>
+            <Button 
+              variant="ghost" 
+              size="sm" 
+              onClick={() => setTasksMinimized(!tasksMinimized)}
+            >
+              {tasksMinimized ? <Maximize2 className="h-4 w-4" /> : <Minimize2 className="h-4 w-4" />}
+            </Button>
           </div>
         </CardHeader>
-        <CardContent className="space-y-2">
-          {todayTasks.map(task => (
-            <div key={task.id} className="flex items-center justify-between p-2 bg-gray-50 rounded">
-              <div className="flex items-center gap-2">
-                {task.type === 'callback' ? (
-                  <Calendar className="h-4 w-4 text-blue-600" />
-                ) : (
-                  <Clock className="h-4 w-4 text-orange-600" />
-                )}
-                <div>
-                  <p className="text-sm font-medium">{task.contact}</p>
-                  <p className="text-xs text-gray-600">{task.time} - {task.course}</p>
+        {!tasksMinimized && (
+          <CardContent className="space-y-2">
+            {todayTasks.map(task => (
+              <div key={task.id} className="flex items-center justify-between p-2 bg-gray-50 rounded">
+                <div className="flex items-center gap-2">
+                  <div className={`w-3 h-3 rounded-full ${
+                    task.priority === 'high' ? 'bg-red-500' :
+                    task.priority === 'medium' ? 'bg-yellow-500' : 'bg-green-500'
+                  }`}></div>
+                  {task.type === 'callback' ? (
+                    <Calendar className="h-4 w-4 text-blue-600" />
+                  ) : (
+                    <Clock className="h-4 w-4 text-orange-600" />
+                  )}
+                  <div>
+                    <p className="text-sm font-medium">{task.contact}</p>
+                    <p className="text-xs text-gray-600">{task.time} - {task.course}</p>
+                  </div>
+                </div>
+                <div className="flex gap-1">
+                  <Button 
+                    size="sm" 
+                    variant="ghost"
+                    onClick={() => handleQuickCall(task.phone, task.contact)}
+                    title="Llamar"
+                  >
+                    <Phone className="h-3 w-3" />
+                  </Button>
+                  <Button 
+                    size="sm" 
+                    variant="ghost"
+                    onClick={() => handleQuickWhatsApp(task.phone, task.contact)}
+                    title="WhatsApp"
+                  >
+                    <MessageSquare className="h-3 w-3" />
+                  </Button>
+                  <Button 
+                    size="sm" 
+                    variant="ghost"
+                    onClick={() => markTaskCompleted(task.id)}
+                    title="Marcar como completada"
+                  >
+                    <CheckCircle className="h-3 w-3" />
+                  </Button>
                 </div>
               </div>
-              <div className="flex gap-1">
-                <Button size="sm" variant="ghost">
-                  <Phone className="h-3 w-3" />
-                </Button>
-                <Button size="sm" variant="ghost">
-                  <CheckCircle className="h-3 w-3" />
-                </Button>
+            ))}
+            
+            {todayTasks.length === 0 && (
+              <div className="text-center py-4 text-gray-500">
+                <CheckCircle className="h-8 w-8 mx-auto mb-2" />
+                <p className="text-sm">¡Todas las tareas completadas!</p>
               </div>
-            </div>
-          ))}
-          
-          {todayTasks.length === 0 && (
-            <div className="text-center py-4 text-gray-500">
-              <CheckCircle className="h-8 w-8 mx-auto mb-2" />
-              <p className="text-sm">¡Todas las tareas completadas!</p>
-            </div>
-          )}
-        </CardContent>
+            )}
+          </CardContent>
+        )}
       </Card>
 
       {/* Modales */}
