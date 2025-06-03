@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -11,24 +10,32 @@ import {
   MessageSquare, 
   Calendar, 
   Search, 
-  Users, 
-  Target,
-  TrendingUp,
-  Clock,
-  AlertCircle,
   CheckCircle,
   X,
   Minimize2,
   Maximize2
 } from 'lucide-react';
-import { useToast } from "@/hooks/use-toast";
+import { useVicidial } from '@/hooks/useVicidial';
+import { useAuth } from '@/contexts/AuthContext';
 
 const QuickActions = () => {
+  const { user } = useAuth();
+  const { addLead, startCall } = useVicidial();
+  
   const [showNewLead, setShowNewLead] = useState(false);
   const [showQuickCall, setShowQuickCall] = useState(false);
   const [showQuickSearch, setShowQuickSearch] = useState(false);
   const [tasksMinimized, setTasksMinimized] = useState(false);
-  const { toast } = useToast();
+
+  // Formulario para nuevo lead
+  const [newLeadData, setNewLeadData] = useState({
+    first_name: '',
+    last_name: '',
+    phone_number: '',
+    email: '',
+    course: '',
+    source: ''
+  });
 
   // Datos de acciones rápidas
   const todayTasks = [
@@ -68,30 +75,55 @@ const QuickActions = () => {
   ];
 
   const handleQuickCall = (phone: string, name: string) => {
-    toast({
-      title: "Iniciando llamada",
-      description: `Conectando con ${name} (${phone})`,
+    const cleanPhone = phone.replace(/\D/g, '');
+    startCall({
+      phoneNumber: cleanPhone,
+      phoneCode: '57',
+      leadName: name
     });
     setShowQuickCall(false);
   };
 
   const handleQuickWhatsApp = (phone: string, name: string) => {
     const cleanPhone = phone.replace(/\D/g, '');
-    const message = encodeURIComponent(`Hola ${name}, soy de CCD Capacitación. ¿Tienes unos minutos para conversar sobre nuestros cursos?`);
+    const message = encodeURIComponent(`Hola ${name}, soy ${user?.name} de CCD Capacitación. ¿Tienes unos minutos para conversar sobre nuestros cursos?`);
     const whatsappUrl = `https://wa.me/${cleanPhone}?text=${message}`;
     window.open(whatsappUrl, '_blank');
+  };
+
+  const handleCreateLead = () => {
+    if (!newLeadData.phone_number || !newLeadData.first_name) {
+      return;
+    }
+
+    const leadData = {
+      phone_number: newLeadData.phone_number.replace(/\D/g, ''), // Solo números
+      phone_code: '57',
+      first_name: newLeadData.first_name,
+      last_name: newLeadData.last_name,
+      email: newLeadData.email,
+      list_id: '999',
+      comments: `Curso: ${newLeadData.course}, Fuente: ${newLeadData.source}`
+    };
+
+    addLead(leadData);
     
-    toast({
-      title: "WhatsApp abierto",
-      description: `Mensaje enviado a ${name}`,
+    // Limpiar formulario
+    setNewLeadData({
+      first_name: '',
+      last_name: '',
+      phone_number: '',
+      email: '',
+      course: '',
+      source: ''
     });
+    
+    setShowNewLead(false);
   };
 
   const markTaskCompleted = (taskId: number) => {
-    toast({
-      title: "Tarea completada",
-      description: "La tarea ha sido marcada como completada",
-    });
+    // En una implementación real, esto actualizaría el estado en Vicidial
+    console.log(`Tarea ${taskId} completada`);
   };
 
   const NewLeadModal = () => (
@@ -99,7 +131,7 @@ const QuickActions = () => {
       <Card className="w-full max-w-md">
         <CardHeader>
           <div className="flex justify-between items-center">
-            <CardTitle>Nuevo Lead Rápido</CardTitle>
+            <CardTitle>Nuevo Lead - Vicidial</CardTitle>
             <Button variant="ghost" size="sm" onClick={() => setShowNewLead(false)}>
               <X className="h-4 w-4" />
             </Button>
@@ -107,12 +139,29 @@ const QuickActions = () => {
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="grid grid-cols-2 gap-4">
-            <Input placeholder="Nombre" />
-            <Input placeholder="Apellido" />
+            <Input 
+              placeholder="Nombre" 
+              value={newLeadData.first_name}
+              onChange={(e) => setNewLeadData(prev => ({ ...prev, first_name: e.target.value }))}
+            />
+            <Input 
+              placeholder="Apellido" 
+              value={newLeadData.last_name}
+              onChange={(e) => setNewLeadData(prev => ({ ...prev, last_name: e.target.value }))}
+            />
           </div>
-          <Input placeholder="Teléfono" />
-          <Input placeholder="Email" />
-          <Select>
+          <Input 
+            placeholder="Teléfono (ej: 3001234567)" 
+            value={newLeadData.phone_number}
+            onChange={(e) => setNewLeadData(prev => ({ ...prev, phone_number: e.target.value }))}
+          />
+          <Input 
+            placeholder="Email" 
+            type="email"
+            value={newLeadData.email}
+            onChange={(e) => setNewLeadData(prev => ({ ...prev, email: e.target.value }))}
+          />
+          <Select value={newLeadData.course} onValueChange={(value) => setNewLeadData(prev => ({ ...prev, course: value }))}>
             <SelectTrigger>
               <SelectValue placeholder="Curso de interés" />
             </SelectTrigger>
@@ -123,7 +172,7 @@ const QuickActions = () => {
               <SelectItem value="nomina">Nómina</SelectItem>
             </SelectContent>
           </Select>
-          <Select>
+          <Select value={newLeadData.source} onValueChange={(value) => setNewLeadData(prev => ({ ...prev, source: value }))}>
             <SelectTrigger>
               <SelectValue placeholder="Fuente" />
             </SelectTrigger>
@@ -136,15 +185,13 @@ const QuickActions = () => {
             </SelectContent>
           </Select>
           <div className="flex gap-2">
-            <Button className="flex-1" onClick={() => {
-              toast({
-                title: "Lead creado",
-                description: "El nuevo lead ha sido agregado al sistema",
-              });
-              setShowNewLead(false);
-            }}>
+            <Button 
+              className="flex-1" 
+              onClick={handleCreateLead}
+              disabled={!newLeadData.phone_number || !newLeadData.first_name}
+            >
               <Plus className="h-4 w-4 mr-2" />
-              Crear Lead
+              Crear en Vicidial
             </Button>
             <Button variant="outline" onClick={() => setShowNewLead(false)}>
               Cancelar
@@ -160,7 +207,7 @@ const QuickActions = () => {
       <Card className="w-full max-w-md">
         <CardHeader>
           <div className="flex justify-between items-center">
-            <CardTitle>Llamada Rápida</CardTitle>
+            <CardTitle>Llamada Rápida - Vicidial</CardTitle>
             <Button variant="ghost" size="sm" onClick={() => setShowQuickCall(false)}>
               <X className="h-4 w-4" />
             </Button>
@@ -298,7 +345,7 @@ const QuickActions = () => {
                   {task.type === 'callback' ? (
                     <Calendar className="h-4 w-4 text-blue-600" />
                   ) : (
-                    <Clock className="h-4 w-4 text-orange-600" />
+                    <Phone className="h-4 w-4 text-orange-600" />
                   )}
                   <div>
                     <p className="text-sm font-medium">{task.contact}</p>
@@ -310,7 +357,7 @@ const QuickActions = () => {
                     size="sm" 
                     variant="ghost"
                     onClick={() => handleQuickCall(task.phone, task.contact)}
-                    title="Llamar"
+                    title="Llamar con Vicidial"
                   >
                     <Phone className="h-3 w-3" />
                   </Button>
