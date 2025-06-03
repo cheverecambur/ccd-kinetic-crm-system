@@ -7,26 +7,19 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { 
   Phone,
   MessageSquare,
   Calendar,
   Clock,
   User,
-  MapPin,
-  Mail,
-  Building,
-  GraduationCap,
-  Star,
-  AlertTriangle,
-  CheckCircle,
-  XCircle,
   PhoneCall,
   Save,
   RotateCcw,
-  Plus,
-  Trash2
+  Star,
+  CheckCircle,
+  XCircle,
+  AlertTriangle
 } from 'lucide-react';
 import { useToast } from "@/hooks/use-toast";
 
@@ -37,7 +30,7 @@ interface Disposition {
   color: string;
   requiresCallback: boolean;
   requiresComment: boolean;
-  nextAction: string;
+  description: string;
   points: number;
 }
 
@@ -52,21 +45,18 @@ interface LeadTypificationData {
   leadId: number;
   callId: string;
   disposition: string;
-  subDisposition?: string;
   comments: string;
   callback?: CallbackSchedule;
-  nextContactDate?: string;
   contactAttempts: number;
   callDuration: number;
   callQuality: number;
-  callResult: string;
   additionalInfo: {
     budget: string;
     timeframe: string;
-    decisionMaker: boolean;
-    courseInterest: string;
-    competitorMention: string;
-    objections: string[];
+    paymentAmount: string;
+    fullName: string;
+    dni: string;
+    confirmationTime: string;
   };
 }
 
@@ -84,208 +74,111 @@ const LeadTypification = ({ leadId, callData, onSave, onCancel }: {
     contactAttempts: callData?.contactAttempts || 1,
     callDuration: callData?.duration || 0,
     callQuality: 3,
-    callResult: '',
     additionalInfo: {
       budget: '',
       timeframe: '',
-      decisionMaker: false,
-      courseInterest: '',
-      competitorMention: '',
-      objections: []
+      paymentAmount: '',
+      fullName: '',
+      dni: '',
+      confirmationTime: ''
     }
   });
 
   const [showCallback, setShowCallback] = useState(false);
-  const [selectedObjections, setSelectedObjections] = useState<string[]>([]);
   const { toast } = useToast();
 
-  // Tipificaciones disponibles
+  // Tipificaciones específicas según los requerimientos
   const dispositions: Disposition[] = [
     {
-      code: 'CONTACT',
-      name: 'Contactado',
-      category: 'SUCCESS',
-      color: 'bg-green-100 text-green-800',
-      requiresCallback: false,
-      requiresComment: true,
-      nextAction: 'Seguimiento comercial',
-      points: 10
-    },
-    {
-      code: 'INTERESTED',
-      name: 'Interesado',
-      category: 'SUCCESS',
-      color: 'bg-blue-100 text-blue-800',
-      requiresCallback: true,
-      requiresComment: true,
-      nextAction: 'Agendar presentación',
-      points: 15
-    },
-    {
-      code: 'VERY_INTERESTED',
-      name: 'Muy Interesado',
-      category: 'SUCCESS',
-      color: 'bg-purple-100 text-purple-800',
-      requiresCallback: true,
-      requiresComment: true,
-      nextAction: 'Enviar propuesta',
-      points: 20
-    },
-    {
-      code: 'SALE',
-      name: 'Venta Realizada',
-      category: 'SALE',
-      color: 'bg-green-200 text-green-900',
-      requiresCallback: false,
-      requiresComment: true,
-      nextAction: 'Proceso de matrícula',
-      points: 50
-    },
-    {
-      code: 'NA',
+      code: 'NO_CONTESTA',
       name: 'No Contesta',
       category: 'NO_CONTACT',
       color: 'bg-gray-100 text-gray-800',
       requiresCallback: true,
-      requiresComment: false,
-      nextAction: 'Reintentar llamada',
-      points: 1
-    },
-    {
-      code: 'BUSY',
-      name: 'Ocupado',
-      category: 'NO_CONTACT',
-      color: 'bg-yellow-100 text-yellow-800',
-      requiresCallback: true,
-      requiresComment: false,
-      nextAction: 'Reintentar en 2 horas',
-      points: 1
-    },
-    {
-      code: 'ANSWM',
-      name: 'Contestadora',
-      category: 'NO_CONTACT',
-      color: 'bg-orange-100 text-orange-800',
-      requiresCallback: true,
       requiresComment: true,
-      nextAction: 'Llamar nuevamente',
+      description: 'NC (3 VECES) SE DEJA MENSAJE DE HABERLO LLAMADO',
+      points: 1
+    },
+    {
+      code: 'NO_DESEA',
+      name: 'No Desea',
+      category: 'NO_SALE',
+      color: 'bg-red-100 text-red-800',
+      requiresCallback: false,
+      requiresComment: true,
+      description: 'CLTE NO DESEA POR PRECIO, TIEMPO, NO INDICA MOTIVO, ETC',
       points: 2
     },
     {
-      code: 'CALLBACK',
-      name: 'Callback Solicitado',
+      code: 'CLTE_POTENCIAL',
+      name: 'Cliente Potencial',
+      category: 'POTENTIAL',
+      color: 'bg-yellow-100 text-yellow-800',
+      requiresCallback: true,
+      requiresComment: true,
+      description: 'CLTE NO TIENE EL PRESUPUESTO, LO LLEVARA PARA EL SOTE INICIO, DEJO DE CONTESTAR',
+      points: 5
+    },
+    {
+      code: 'VOLVER_LLAMAR',
+      name: 'Volver a Llamar',
       category: 'CALLBACK',
       color: 'bg-blue-100 text-blue-800',
       requiresCallback: true,
       requiresComment: true,
-      nextAction: 'Llamar en fecha acordada',
-      points: 8
-    },
-    {
-      code: 'NI',
-      name: 'No Interesado',
-      category: 'NO_SALE',
-      color: 'bg-red-100 text-red-800',
-      requiresCallback: false,
-      requiresComment: true,
-      nextAction: 'Marcar como no prospecto',
+      description: 'NO DEJA EXPLICAR QUIERE QUE LO LLAMEN A OTRA HORA',
       points: 3
     },
     {
-      code: 'NO_BUDGET',
-      name: 'Sin Presupuesto',
-      category: 'NO_SALE',
-      color: 'bg-red-100 text-red-800',
+      code: 'MUY_INTERESADO',
+      name: 'Muy Interesado',
+      category: 'INTERESTED',
+      color: 'bg-green-100 text-green-800',
       requiresCallback: true,
       requiresComment: true,
-      nextAction: 'Callback en 3 meses',
-      points: 5
+      description: 'CLTE EVALUA PROMOCION, CONFIRMARA A LAS 5 PM',
+      points: 15
     },
     {
-      code: 'NO_TIME',
-      name: 'Sin Tiempo',
-      category: 'NO_SALE',
-      color: 'bg-orange-100 text-orange-800',
-      requiresCallback: true,
-      requiresComment: true,
-      nextAction: 'Callback en 1 mes',
-      points: 4
-    },
-    {
-      code: 'COMPETITOR',
-      name: 'Ya estudió con competencia',
-      category: 'NO_SALE',
+      code: 'SER_VACANTE',
+      name: 'Ser Vacante',
+      category: 'SALE',
       color: 'bg-purple-100 text-purple-800',
       requiresCallback: false,
       requiresComment: true,
-      nextAction: 'Análisis competencia',
-      points: 6
+      description: 'FECHA Y HORA DE PAGO (S/50 a mas) (NOMBRE COMPLETO Y DNI)',
+      points: 30
     },
     {
-      code: 'DNC',
-      name: 'No Molestar',
-      category: 'DNC',
-      color: 'bg-black text-white',
+      code: 'PAGO_INCOMPLETO',
+      name: 'Pago Incompleto',
+      category: 'PARTIAL_SALE',
+      color: 'bg-orange-100 text-orange-800',
+      requiresCallback: true,
+      requiresComment: true,
+      description: 'FECHA Y HORA DE PAGO (S/50 o menos del 50%)',
+      points: 20
+    },
+    {
+      code: 'TRIBULADO',
+      name: 'Tribulado',
+      category: 'FULL_SALE',
+      color: 'bg-green-200 text-green-900',
       requiresCallback: false,
       requiresComment: true,
-      nextAction: 'Agregar a lista negra',
-      points: 0
+      description: 'PAGO 50% PAGO COMPLETO + CURSO DE REGALO',
+      points: 50
     },
     {
-      code: 'WRONG',
-      name: 'Número Equivocado',
-      category: 'INVALID',
-      color: 'bg-gray-100 text-gray-800',
+      code: 'EFICAZ',
+      name: 'Eficaz',
+      category: 'NO_PROSPECT',
+      color: 'bg-gray-200 text-gray-800',
       requiresCallback: false,
-      requiresComment: false,
-      nextAction: 'Actualizar datos',
-      points: 0
-    },
-    {
-      code: 'DC',
-      name: 'Desconectado',
-      category: 'INVALID',
-      color: 'bg-gray-100 text-gray-800',
-      requiresCallback: false,
-      requiresComment: false,
-      nextAction: 'Verificar número',
+      requiresComment: true,
+      description: 'CLTE NO RESPONDE LLAMADAS EN 3 DIAS DISTINTOS, NUNCA PIDIO INFORMACION, NIÑOS, ETC',
       points: 0
     }
-  ];
-
-  const subDispositions = {
-    'INTERESTED': [
-      'Quiere información adicional',
-      'Consultará con familia',
-      'Evaluando opciones',
-      'Interesado en modalidad virtual',
-      'Interesado en modalidad presencial'
-    ],
-    'NO_BUDGET': [
-      'Muy costoso',
-      'Buscando opciones más económicas',
-      'Esperando bonificación',
-      'Problemas económicos actuales'
-    ],
-    'NO_TIME': [
-      'Muy ocupado en el trabajo',
-      'Compromisos familiares',
-      'Estudiando otras materias',
-      'Viajando próximamente'
-    ]
-  };
-
-  const objectionsList = [
-    'Precio muy alto',
-    'No tengo tiempo',
-    'Ya estudié algo similar',
-    'No es el momento',
-    'Debo consultar',
-    'No confío en educación virtual',
-    'Prefiero presencial',
-    'No veo el valor',
-    'Hay opciones más baratas',
-    'No tengo computador'
   ];
 
   const selectedDisposition = dispositions.find(d => d.code === formData.disposition);
@@ -294,8 +187,7 @@ const LeadTypification = ({ leadId, callData, onSave, onCancel }: {
     const disp = dispositions.find(d => d.code === value);
     setFormData(prev => ({
       ...prev,
-      disposition: value,
-      subDisposition: ''
+      disposition: value
     }));
     setShowCallback(disp?.requiresCallback || false);
   };
@@ -316,6 +208,27 @@ const LeadTypification = ({ leadId, callData, onSave, onCancel }: {
       toast({
         title: "Error",
         description: "Esta tipificación requiere comentarios",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // Validaciones específicas según tipo
+    if (['SER_VACANTE', 'PAGO_INCOMPLETO', 'TRIBULADO'].includes(formData.disposition)) {
+      if (!formData.additionalInfo.paymentAmount || !formData.additionalInfo.fullName || !formData.additionalInfo.dni) {
+        toast({
+          title: "Error",
+          description: "Para esta tipificación se requiere monto de pago, nombre completo y DNI",
+          variant: "destructive",
+        });
+        return;
+      }
+    }
+
+    if (formData.disposition === 'MUY_INTERESADO' && !formData.additionalInfo.confirmationTime) {
+      toast({
+        title: "Error",
+        description: "Para 'Muy Interesado' se requiere hora de confirmación",
         variant: "destructive",
       });
       return;
@@ -343,32 +256,6 @@ const LeadTypification = ({ leadId, callData, onSave, onCancel }: {
     return `${mins}:${secs.toString().padStart(2, '0')}`;
   };
 
-  const addObjection = (objection: string) => {
-    if (!selectedObjections.includes(objection)) {
-      const newObjections = [...selectedObjections, objection];
-      setSelectedObjections(newObjections);
-      setFormData(prev => ({
-        ...prev,
-        additionalInfo: {
-          ...prev.additionalInfo,
-          objections: newObjections
-        }
-      }));
-    }
-  };
-
-  const removeObjection = (objection: string) => {
-    const newObjections = selectedObjections.filter(o => o !== objection);
-    setSelectedObjections(newObjections);
-    setFormData(prev => ({
-      ...prev,
-      additionalInfo: {
-        ...prev.additionalInfo,
-        objections: newObjections
-      }
-    }));
-  };
-
   return (
     <div className="space-y-6">
       {/* Header de la tipificación */}
@@ -376,7 +263,7 @@ const LeadTypification = ({ leadId, callData, onSave, onCancel }: {
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <PhoneCall className="h-5 w-5" />
-            Tipificación de Llamada
+            Tipificación de Llamada - Lead {leadId}
           </CardTitle>
         </CardHeader>
         <CardContent>
@@ -391,7 +278,7 @@ const LeadTypification = ({ leadId, callData, onSave, onCancel }: {
             </div>
             <div className="flex items-center gap-2">
               <User className="h-4 w-4 text-gray-600" />
-              <span className="text-sm">Lead ID: {leadId}</span>
+              <span className="text-sm">Calidad: {formData.callQuality}/5</span>
             </div>
           </div>
         </CardContent>
@@ -404,7 +291,7 @@ const LeadTypification = ({ leadId, callData, onSave, onCancel }: {
         </CardHeader>
         <CardContent className="space-y-4">
           <div>
-            <Label htmlFor="disposition">Tipificación Principal *</Label>
+            <Label htmlFor="disposition">Tipificación *</Label>
             <Select value={formData.disposition} onValueChange={handleDispositionChange}>
               <SelectTrigger>
                 <SelectValue placeholder="Seleccionar tipificación" />
@@ -422,26 +309,12 @@ const LeadTypification = ({ leadId, callData, onSave, onCancel }: {
                 ))}
               </SelectContent>
             </Select>
+            {selectedDisposition && (
+              <p className="text-xs text-gray-600 mt-1">
+                {selectedDisposition.description}
+              </p>
+            )}
           </div>
-
-          {/* Sub-tipificación si está disponible */}
-          {selectedDisposition && subDispositions[formData.disposition as keyof typeof subDispositions] && (
-            <div>
-              <Label htmlFor="subDisposition">Detalle Específico</Label>
-              <Select value={formData.subDisposition} onValueChange={(value) => setFormData(prev => ({ ...prev, subDisposition: value }))}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Seleccionar detalle" />
-                </SelectTrigger>
-                <SelectContent>
-                  {subDispositions[formData.disposition as keyof typeof subDispositions].map((sub) => (
-                    <SelectItem key={sub} value={sub}>
-                      {sub}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-          )}
 
           {/* Calificación de la llamada */}
           <div>
@@ -458,148 +331,74 @@ const LeadTypification = ({ leadId, callData, onSave, onCancel }: {
                 </Button>
               ))}
             </div>
-            <p className="text-xs text-gray-600 mt-1">
-              {formData.callQuality === 1 ? 'Muy mala conexión/comunicación' :
-               formData.callQuality === 2 ? 'Mala comunicación' :
-               formData.callQuality === 3 ? 'Comunicación regular' :
-               formData.callQuality === 4 ? 'Buena comunicación' :
-               'Excelente comunicación'}
-            </p>
           </div>
 
-          {/* Información adicional del lead */}
-          {['CONTACT', 'INTERESTED', 'VERY_INTERESTED', 'SALE'].includes(formData.disposition) && (
+          {/* Información específica según tipificación */}
+          {['SER_VACANTE', 'PAGO_INCOMPLETO', 'TRIBULADO'].includes(formData.disposition) && (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-4 border-t">
               <div>
-                <Label htmlFor="budget">Presupuesto Disponible</Label>
-                <Select 
-                  value={formData.additionalInfo.budget} 
-                  onValueChange={(value) => setFormData(prev => ({ 
-                    ...prev, 
-                    additionalInfo: { ...prev.additionalInfo, budget: value } 
-                  }))}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Seleccionar rango" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="low">Bajo (Menos de $500,000)</SelectItem>
-                    <SelectItem value="medium">Medio ($500,000 - $1,000,000)</SelectItem>
-                    <SelectItem value="high">Alto (Más de $1,000,000)</SelectItem>
-                    <SelectItem value="unknown">No especificó</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div>
-                <Label htmlFor="timeframe">Marco de Tiempo</Label>
-                <Select 
-                  value={formData.additionalInfo.timeframe} 
-                  onValueChange={(value) => setFormData(prev => ({ 
-                    ...prev, 
-                    additionalInfo: { ...prev.additionalInfo, timeframe: value } 
-                  }))}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="¿Cuándo quiere empezar?" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="immediate">Inmediatamente</SelectItem>
-                    <SelectItem value="week">Esta semana</SelectItem>
-                    <SelectItem value="month">Este mes</SelectItem>
-                    <SelectItem value="quarter">En 3 meses</SelectItem>
-                    <SelectItem value="later">Más adelante</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div>
-                <Label htmlFor="courseInterest">Curso de Mayor Interés</Label>
+                <Label htmlFor="paymentAmount">Monto de Pago (S/) *</Label>
                 <Input
-                  value={formData.additionalInfo.courseInterest}
+                  value={formData.additionalInfo.paymentAmount}
                   onChange={(e) => setFormData(prev => ({ 
                     ...prev, 
-                    additionalInfo: { ...prev.additionalInfo, courseInterest: e.target.value } 
+                    additionalInfo: { ...prev.additionalInfo, paymentAmount: e.target.value } 
                   }))}
-                  placeholder="¿Qué curso le interesa más?"
+                  placeholder="50"
+                  type="number"
                 />
               </div>
-
               <div>
-                <Label htmlFor="competitor">Competencia Mencionada</Label>
+                <Label htmlFor="fullName">Nombre Completo *</Label>
                 <Input
-                  value={formData.additionalInfo.competitorMention}
+                  value={formData.additionalInfo.fullName}
                   onChange={(e) => setFormData(prev => ({ 
                     ...prev, 
-                    additionalInfo: { ...prev.additionalInfo, competitorMention: e.target.value } 
+                    additionalInfo: { ...prev.additionalInfo, fullName: e.target.value } 
                   }))}
-                  placeholder="¿Mencionó algún competidor?"
+                  placeholder="Nombre completo del cliente"
                 />
               </div>
-
-              <div className="md:col-span-2">
-                <Label>¿Es quien toma las decisiones?</Label>
-                <div className="flex gap-4 mt-2">
-                  <Button
-                    variant={formData.additionalInfo.decisionMaker ? "default" : "outline"}
-                    size="sm"
-                    onClick={() => setFormData(prev => ({ 
-                      ...prev, 
-                      additionalInfo: { ...prev.additionalInfo, decisionMaker: true } 
-                    }))}
-                  >
-                    <CheckCircle className="h-4 w-4 mr-2" />
-                    Sí, decide solo
-                  </Button>
-                  <Button
-                    variant={!formData.additionalInfo.decisionMaker ? "default" : "outline"}
-                    size="sm"
-                    onClick={() => setFormData(prev => ({ 
-                      ...prev, 
-                      additionalInfo: { ...prev.additionalInfo, decisionMaker: false } 
-                    }))}
-                  >
-                    <XCircle className="h-4 w-4 mr-2" />
-                    Debe consultar
-                  </Button>
-                </div>
+              <div>
+                <Label htmlFor="dni">DNI *</Label>
+                <Input
+                  value={formData.additionalInfo.dni}
+                  onChange={(e) => setFormData(prev => ({ 
+                    ...prev, 
+                    additionalInfo: { ...prev.additionalInfo, dni: e.target.value } 
+                  }))}
+                  placeholder="12345678"
+                />
+              </div>
+              <div>
+                <Label htmlFor="timeframe">Fecha y Hora de Pago</Label>
+                <Input
+                  type="datetime-local"
+                  value={formData.additionalInfo.timeframe}
+                  onChange={(e) => setFormData(prev => ({ 
+                    ...prev, 
+                    additionalInfo: { ...prev.additionalInfo, timeframe: e.target.value } 
+                  }))}
+                />
               </div>
             </div>
           )}
 
-          {/* Objeciones mencionadas */}
-          {['NI', 'NO_BUDGET', 'NO_TIME', 'COMPETITOR'].includes(formData.disposition) && (
+          {formData.disposition === 'MUY_INTERESADO' && (
             <div className="pt-4 border-t">
-              <Label>Objeciones Mencionadas</Label>
-              <div className="grid grid-cols-2 md:grid-cols-3 gap-2 mt-2 mb-4">
-                {objectionsList.map((objection) => (
-                  <Button
-                    key={objection}
-                    variant={selectedObjections.includes(objection) ? "default" : "outline"}
-                    size="sm"
-                    onClick={() => selectedObjections.includes(objection) ? removeObjection(objection) : addObjection(objection)}
-                  >
-                    {objection}
-                  </Button>
-                ))}
-              </div>
-              {selectedObjections.length > 0 && (
-                <div className="flex flex-wrap gap-2">
-                  {selectedObjections.map((objection) => (
-                    <Badge key={objection} variant="secondary" className="flex items-center gap-1">
-                      {objection}
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        className="h-4 w-4 p-0"
-                        onClick={() => removeObjection(objection)}
-                      >
-                        <Trash2 className="h-3 w-3" />
-                      </Button>
-                    </Badge>
-                  ))}
-                </div>
-              )}
+              <Label htmlFor="confirmationTime">Hora de Confirmación *</Label>
+              <Input
+                type="time"
+                value={formData.additionalInfo.confirmationTime}
+                onChange={(e) => setFormData(prev => ({ 
+                  ...prev, 
+                  additionalInfo: { ...prev.additionalInfo, confirmationTime: e.target.value } 
+                }))}
+                placeholder="17:00"
+              />
+              <p className="text-xs text-gray-600 mt-1">
+                Cliente confirmará a esta hora si procede con la promoción
+              </p>
             </div>
           )}
         </CardContent>
@@ -610,7 +409,7 @@ const LeadTypification = ({ leadId, callData, onSave, onCancel }: {
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <MessageSquare className="h-5 w-5" />
-            Comentarios de la Llamada
+            Observaciones
             {selectedDisposition?.requiresComment && <span className="text-red-500">*</span>}
           </CardTitle>
         </CardHeader>
@@ -618,7 +417,7 @@ const LeadTypification = ({ leadId, callData, onSave, onCancel }: {
           <Textarea
             value={formData.comments}
             onChange={(e) => setFormData(prev => ({ ...prev, comments: e.target.value }))}
-            placeholder="Describe los detalles de la conversación, información relevante del lead, próximos pasos, etc."
+            placeholder="Describe los detalles de la conversación, motivos del cliente, próximos pasos, etc."
             rows={4}
             className="w-full"
           />
@@ -716,38 +515,30 @@ const LeadTypification = ({ leadId, callData, onSave, onCancel }: {
         </Card>
       )}
 
-      {/* Resumen de la tipificación */}
+      {/* Resumen */}
       {selectedDisposition && (
         <Card>
           <CardHeader>
-            <CardTitle>Resumen de Tipificación</CardTitle>
+            <CardTitle>Resumen</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="space-y-3">
-              <div className="flex items-center justify-between">
+            <div className="space-y-2">
+              <div className="flex justify-between">
                 <span>Tipificación:</span>
-                <Badge className={selectedDisposition.color}>
-                  {selectedDisposition.name}
-                </Badge>
+                <Badge className={selectedDisposition.color}>{selectedDisposition.name}</Badge>
               </div>
-              <div className="flex items-center justify-between">
+              <div className="flex justify-between">
                 <span>Categoría:</span>
-                <span className="font-medium">{selectedDisposition.category}</span>
+                <span>{selectedDisposition.category}</span>
               </div>
-              <div className="flex items-center justify-between">
+              <div className="flex justify-between">
                 <span>Puntos:</span>
-                <span className="font-bold text-blue-600">{selectedDisposition.points}</span>
-              </div>
-              <div className="flex items-center justify-between">
-                <span>Próxima acción:</span>
-                <span className="text-sm text-gray-600">{selectedDisposition.nextAction}</span>
+                <span className="font-bold">{selectedDisposition.points}</span>
               </div>
               {formData.callback?.date && (
-                <div className="flex items-center justify-between">
-                  <span>Callback programado:</span>
-                  <span className="font-medium">
-                    {new Date(formData.callback.date).toLocaleDateString('es-ES')} a las {formData.callback.time}
-                  </span>
+                <div className="flex justify-between">
+                  <span>Callback:</span>
+                  <span>{formData.callback.date} - {formData.callback.time}</span>
                 </div>
               )}
             </div>
