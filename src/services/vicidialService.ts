@@ -1,4 +1,3 @@
-
 // Servicio para integración con Vicidial API
 export interface VicidialConfig {
   baseUrl: string;
@@ -115,25 +114,79 @@ class VicidialService {
     return `${this.config.baseUrl}/vicidial/non_agent_api.php?${urlParams.toString()}`;
   }
 
-  // Realizar llamada HTTP
+  // Realizar llamada HTTP con mejor manejo de errores
   private async makeRequest(url: string): Promise<string> {
     try {
+      console.log('Vicidial API Request:', url);
+      
       const response = await fetch(url, {
         method: 'GET',
         headers: {
           'Content-Type': 'application/x-www-form-urlencoded',
         },
+        // Timeout de 30 segundos
+        signal: AbortSignal.timeout(30000)
       });
 
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
 
-      return await response.text();
+      const result = await response.text();
+      console.log('Vicidial API Response:', result);
+      
+      return result;
     } catch (error) {
       console.error('Vicidial API Error:', error);
+      
+      // En modo desarrollo, devolver respuestas simuladas
+      if (import.meta.env.DEV) {
+        return this.getSimulatedResponse(url);
+      }
+      
       throw error;
     }
+  }
+
+  // Respuestas simuladas para desarrollo
+  private getSimulatedResponse(url: string): string {
+    if (url.includes('function=version')) {
+      return 'SUCCESS: VERSION: 2.14-917a BUILD: 240827-1107 - vicidial';
+    }
+    
+    if (url.includes('function=external_dial')) {
+      return 'SUCCESS: external_dial MANUAL DIAL INITIATED - 12345|3001234567|agent001';
+    }
+    
+    if (url.includes('function=external_hangup')) {
+      return 'SUCCESS: external_hangup HANGUP SENT - agent001|1';
+    }
+    
+    if (url.includes('function=external_pause')) {
+      return 'SUCCESS: external_pause PAUSE/RESUME SENT - agent001|PAUSE';
+    }
+    
+    if (url.includes('function=external_status')) {
+      return 'SUCCESS: external_status STATUS SET - agent001|CALLBK';
+    }
+    
+    if (url.includes('function=add_lead')) {
+      return 'SUCCESS: add_lead LEAD HAS BEEN ADDED - 7275551111|agent001|999|193715|-4';
+    }
+    
+    if (url.includes('function=update_lead')) {
+      return 'SUCCESS: update_lead LEAD HAS BEEN UPDATED - agent001|193716';
+    }
+    
+    if (url.includes('function=agent_stats_export')) {
+      return 'agent001|Carlos Rodriguez|VENTAS|23|8:30:15|6:45:30|0:17:36|0:02:45|85.3%|1:15:00|3|2:50:05|8|0:09:23|14.7%|2.7|0:45:15';
+    }
+    
+    if (url.includes('function=recording_lookup')) {
+      return '2025-06-03 10:30:01|agent001|534820|876409|125|http://server/recordings/20250603_103000_12345_agent001-all.wav\n2025-06-03 14:15:22|agent001|534821|876410|89|http://server/recordings/20250603_141522_12346_agent001-all.wav';
+    }
+    
+    return 'SUCCESS: SIMULATED RESPONSE';
   }
 
   // === API DE AGENTE ===
@@ -396,14 +449,30 @@ class VicidialService {
       wait_time: 600
     };
   }
+
+  // Verificar conexión con Vicidial
+  async testConnection(): Promise<boolean> {
+    try {
+      const response = await this.getVersion();
+      return this.isSuccessResponse(response);
+    } catch (error) {
+      console.error('Error testing Vicidial connection:', error);
+      return false;
+    }
+  }
 }
 
-// Instancia por defecto del servicio (configurar con variables de entorno reales)
-export const vicidialService = new VicidialService({
-  baseUrl: process.env.REACT_APP_VICIDIAL_URL || 'http://localhost',
-  user: process.env.REACT_APP_VICIDIAL_USER || 'api_user',
-  pass: process.env.REACT_APP_VICIDIAL_PASS || 'api_pass',
-  source: 'CCD_FRONTEND'
-});
+// Función para obtener configuración desde variables de entorno
+function getVicidialConfig(): VicidialConfig {
+  return {
+    baseUrl: import.meta.env.VITE_VICIDIAL_URL || 'http://localhost',
+    user: import.meta.env.VITE_VICIDIAL_USER || 'api_user',
+    pass: import.meta.env.VITE_VICIDIAL_PASS || 'api_pass',
+    source: 'CCD_FRONTEND'
+  };
+}
+
+// Instancia por defecto del servicio
+export const vicidialService = new VicidialService(getVicidialConfig());
 
 export default VicidialService;

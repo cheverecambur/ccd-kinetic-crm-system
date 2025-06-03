@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -96,7 +95,7 @@ const CallCenter = () => {
   // Manejar inicio de llamada
   const handleStartCall = () => {
     startCall({
-      phoneNumber: nextLead.phone.replace(/\D/g, ''), // Solo números
+      phoneNumber: nextLead.phone.replace(/\D/g, ''),
       phoneCode: '57',
       leadId: nextLead.id,
       leadName: nextLead.name
@@ -116,11 +115,7 @@ const CallCenter = () => {
 
   // Guardar resultado de llamada
   const handleSaveDisposition = () => {
-    if (!disposition) {
-      return;
-    }
-
-    if (!user?.username) {
+    if (!disposition || !user?.username) {
       return;
     }
 
@@ -222,7 +217,7 @@ const CallCenter = () => {
                   </Button>
                   {!isVicidialConnected && (
                     <p className="text-sm text-red-600">
-                      Vicidial no está conectado. Verifique la configuración.
+                      Vicidial no está conectado. Configurar variables de entorno.
                     </p>
                   )}
                 </div>

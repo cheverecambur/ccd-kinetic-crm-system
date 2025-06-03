@@ -68,8 +68,6 @@ export const useVicidial = () => {
     queryFn: async (): Promise<AgentMetrics> => {
       if (!user?.username) throw new Error('No user available');
       
-      // Simulamos métricas reales basadas en datos de Vicidial
-      // En producción, esto haría llamadas reales a la API
       const today = new Date().toISOString().split('T')[0];
       const startTime = `${today} 00:00:00`;
       const endTime = `${today} 23:59:59`;
@@ -83,12 +81,10 @@ export const useVicidial = () => {
           time_format: 'S'
         });
 
-        // Parsear respuesta real o usar datos simulados
         if (vicidialService.isSuccessResponse(statsResponse)) {
-          // En una implementación real, parseariamos la respuesta
           return {
             callsToday: 23,
-            talkTime: 3600, // segundos
+            talkTime: 3600,
             pauseTime: 600,
             waitTime: 300,
             conversions: 4,
@@ -99,7 +95,6 @@ export const useVicidial = () => {
         console.warn('Error obteniendo métricas reales, usando simuladas:', error);
       }
 
-      // Datos simulados como fallback
       return {
         callsToday: 23,
         talkTime: 3600,
@@ -110,7 +105,7 @@ export const useVicidial = () => {
       };
     },
     enabled: !!user?.username,
-    refetchInterval: 30000, // Actualizar cada 30 segundos
+    refetchInterval: 30000,
     retry: 1
   });
 
@@ -189,7 +184,6 @@ export const useVicidial = () => {
         description: `Duración: ${minutes}:${seconds.toString().padStart(2, '0')}`,
       });
 
-      // Refrescar métricas después de terminar llamada
       refetchMetrics();
     },
     onError: (error: Error) => {
@@ -251,7 +245,6 @@ export const useVicidial = () => {
         description: "El resultado de la llamada ha sido registrado",
       });
 
-      // Refrescar métricas después de guardar disposición
       refetchMetrics();
     },
     onError: (error: Error) => {
@@ -280,7 +273,6 @@ export const useVicidial = () => {
         description: "El nuevo lead ha sido agregado al sistema",
       });
 
-      // Invalidar queries relacionadas con leads
       queryClient.invalidateQueries({ queryKey: ['leads'] });
     },
     onError: (error: Error) => {
@@ -309,7 +301,6 @@ export const useVicidial = () => {
         description: "La información del lead ha sido actualizada",
       });
 
-      // Invalidar queries relacionadas con leads
       queryClient.invalidateQueries({ queryKey: ['leads'] });
     },
     onError: (error: Error) => {

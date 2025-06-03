@@ -7,6 +7,7 @@ interface User {
   email: string;
   role: 'ADMIN' | 'SUPERVISOR' | 'AGENT';
   user_id: string;
+  username: string; // Agregado para compatibilidad con Vicidial
   extension?: string;
   user_group?: string;
 }
@@ -40,7 +41,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       name: 'Admin Principal',
       email: 'admin@empresa.com',
       role: 'ADMIN',
-      user_id: 'admin001'
+      user_id: 'admin001',
+      username: 'admin001'
     },
     {
       id: '2',
@@ -48,6 +50,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       email: 'carlos@empresa.com',
       role: 'AGENT',
       user_id: 'agent001',
+      username: 'agent001',
       extension: '101',
       user_group: 'VENTAS'
     },
@@ -56,7 +59,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       name: 'María Supervisor',
       email: 'maria@empresa.com',
       role: 'SUPERVISOR',
-      user_id: 'super001'
+      user_id: 'super001',
+      username: 'super001'
     }
   ];
 
