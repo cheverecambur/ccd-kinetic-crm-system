@@ -1,506 +1,354 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { Progress } from "@/components/ui/progress";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { 
   Phone, 
+  MessageSquare, 
   Mail, 
-  MapPin, 
-  Calendar, 
-  Star, 
-  TrendingUp, 
   User, 
-  Tag, 
-  Target,
+  MapPin, 
+  Calendar,
+  Star,
   Clock,
-  Activity,
-  MessageSquare,
   FileText,
-  DollarSign,
-  CheckCircle,
-  AlertTriangle,
-  Eye,
+  Plus,
   Edit,
-  Plus
+  Save,
+  X
 } from 'lucide-react';
 import { useToast } from "@/hooks/use-toast";
 
-interface LeadPromotion {
-  id: string;
-  promotionCode: string;
-  productName: string;
-  originalPrice: number;
-  discountedPrice: number;
-  discountPercentage: number;
-  validUntil: string;
-  status: 'active' | 'expired' | 'used' | 'pending';
-  interestLevel: 1 | 2 | 3 | 4 | 5;
-  dateShown: string;
-  responseDate?: string;
-  notes: string;
-  createdBy: string;
+interface LeadProfileCompleteProps {
+  leadPhone: string;
 }
 
-interface LeadInteraction {
-  id: string;
-  date: string;
-  type: 'call' | 'whatsapp' | 'email' | 'sms' | 'meeting' | 'promotion_sent' | 'promotion_viewed' | 'activation';
-  channel: string;
-  agent: string;
-  duration?: number;
-  outcome: string;
-  nextAction?: string;
-  notes: string;
-  promotionId?: string;
-  isPrivate: boolean;
-  attachments?: string[];
-}
-
-interface LeadCampaign {
-  campaignCode: string;
-  campaignName: string;
-  source: string;
-  medium: string;
-  term?: string;
-  content?: string;
-  cost: number;
-  dateAdded: string;
-  isActive: boolean;
-}
-
-interface LeadActivation {
-  id: string;
-  activatedDate: string;
-  activatedBy: string;
-  activationMethod: 'call' | 'whatsapp' | 'email' | 'meeting';
-  productPurchased: string;
-  amount: number;
-  paymentMethod: string;
-  paymentStatus: 'pending' | 'completed' | 'failed' | 'refunded';
-  notes: string;
-  followUpRequired: boolean;
-  satisfactionScore?: number;
-}
-
-interface Lead {
-  id: string;
-  phone: string;
-  name: string;
-  email?: string;
-  city: string;
-  status: string;
-  score: number;
-  stage: string;
-  assignedTo: string;
-  createdAt: string;
-  lastContact: string;
-  totalInteractions: number;
-  campaign: LeadCampaign;
-  promotions: LeadPromotion[];
-  interactions: LeadInteraction[];
-  activations: LeadActivation[];
-  totalRevenue: number;
-  roi: number;
-  nextScheduledAction?: string;
-  tags: string[];
-}
-
-const LeadProfileComplete = ({ leadPhone }: { leadPhone: string }) => {
-  const [lead, setLead] = useState<Lead | null>(null);
-  const [activeTab, setActiveTab] = useState('overview');
-  const [loading, setLoading] = useState(true);
+const LeadProfileComplete: React.FC<LeadProfileCompleteProps> = ({ leadPhone }) => {
   const { toast } = useToast();
+  const [editingNote, setEditingNote] = useState(false);
+  const [newNote, setNewNote] = useState('');
+  const [editingInfo, setEditingInfo] = useState(false);
 
-  useEffect(() => {
-    // Simular carga de datos del lead por teléfono
-    const loadLeadData = () => {
-      const sampleLead: Lead = {
-        id: '1',
-        phone: '+57 301 234 5678',
-        name: 'Carlos González Martínez',
-        email: 'carlos.gonzalez@email.com',
-        city: 'Bogotá',
-        status: 'qualified',
-        score: 85,
-        stage: 'proposal',
-        assignedTo: 'María García',
-        createdAt: '2024-01-15T10:30:00Z',
-        lastContact: '2024-01-26T14:20:00Z',
-        totalInteractions: 12,
-        campaign: {
-          campaignCode: 'META_EXCEL_2024_Q1',
-          campaignName: 'Meta Ads - Excel Avanzado Q1 2024',
-          source: 'Meta Ads',
-          medium: 'cpc',
-          term: 'excel avanzado',
-          content: 'carousel_video',
-          cost: 15000,
-          dateAdded: '2024-01-15T10:30:00Z',
-          isActive: true
-        },
-        promotions: [
-          {
-            id: '1',
-            promotionCode: 'EXCEL50_JAN',
-            productName: 'Excel Avanzado + Power BI',
-            originalPrice: 450000,
-            discountedPrice: 225000,
-            discountPercentage: 50,
-            validUntil: '2024-01-31T23:59:59Z',
-            status: 'active',
-            interestLevel: 5,
-            dateShown: '2024-01-20T15:30:00Z',
-            responseDate: '2024-01-21T10:15:00Z',
-            notes: 'Muy interesado, preguntó por modalidades de pago',
-            createdBy: 'María García'
-          },
-          {
-            id: '2',
-            promotionCode: 'COMBO_CONT_30',
-            productName: 'Combo Contabilidad Digital',
-            originalPrice: 800000,
-            discountedPrice: 560000,
-            discountPercentage: 30,
-            validUntil: '2024-02-15T23:59:59Z',
-            status: 'pending',
-            interestLevel: 3,
-            dateShown: '2024-01-25T09:00:00Z',
-            notes: 'Enviado por WhatsApp, pendiente respuesta',
-            createdBy: 'Carlos Rodríguez'
-          }
-        ],
-        interactions: [
-          {
-            id: '1',
-            date: '2024-01-26T14:20:00Z',
-            type: 'call',
-            channel: 'Teléfono',
-            agent: 'María García',
-            duration: 480,
-            outcome: 'Interesado en propuesta',
-            nextAction: 'Enviar propuesta formal',
-            notes: 'Lead muy interesado en Excel Avanzado. Trabaja en área contable de empresa mediana. Tiene presupuesto aprobado. Solicitó información sobre modalidades de pago y certificación.',
-            isPrivate: false
-          },
-          {
-            id: '2',
-            date: '2024-01-25T09:15:00Z',
-            type: 'whatsapp',
-            channel: 'WhatsApp',
-            agent: 'Carlos Rodríguez',
-            outcome: 'Información enviada',
-            notes: 'Envío de brochure y promoción especial COMBO_CONT_30',
-            promotionId: '2',
-            isPrivate: false
-          },
-          {
-            id: '3',
-            date: '2024-01-20T15:30:00Z',
-            type: 'promotion_sent',
-            channel: 'Email',
-            agent: 'María García',
-            outcome: 'Promoción enviada',
-            notes: 'Promoción EXCEL50_JAN enviada por email con video explicativo',
-            promotionId: '1',
-            isPrivate: false
-          }
-        ],
-        activations: [
-          {
-            id: '1',
-            activatedDate: '2024-01-10T16:45:00Z',
-            activatedBy: 'María García',
-            activationMethod: 'call',
-            productPurchased: 'Curso Básico de Excel',
-            amount: 150000,
-            paymentMethod: 'Tarjeta de crédito',
-            paymentStatus: 'completed',
-            notes: 'Primera compra exitosa. Cliente muy satisfecho con la atención.',
-            followUpRequired: true,
-            satisfactionScore: 5
-          }
-        ],
-        totalRevenue: 150000,
-        roi: 900, // (150000 - 15000) / 15000 * 100
-        nextScheduledAction: '2024-01-27T10:00:00Z',
-        tags: ['alta_calidad', 'presupuesto_confirmado', 'excel', 'contabilidad', 'empresa_mediana']
-      };
+  // Datos simulados del lead
+  const leadData = {
+    id: '1',
+    name: 'María González',
+    phone: leadPhone,
+    email: 'maria.gonzalez@email.com',
+    city: 'Bogotá',
+    status: 'qualified',
+    score: 85,
+    source: 'Facebook',
+    interestCourse: 'Contabilidad Básica',
+    registrationDate: '2024-01-20',
+    lastContact: '2024-01-26T14:20:00Z',
+    nextAction: 'Enviar propuesta de Excel Avanzado',
+    assignedAgent: 'Carlos Rodríguez',
+    leadQuality: 'HOT',
+    budget: '$500.000 - $1.000.000',
+    timeframe: '1-2 meses'
+  };
 
-      setLead(sampleLead);
-      setLoading(false);
-    };
+  const interactions = [
+    {
+      id: 1,
+      type: 'call',
+      date: '2024-01-26T14:20:00Z',
+      duration: '8:45',
+      outcome: 'Interesado en curso de contabilidad',
+      agent: 'Carlos Rodríguez',
+      notes: 'Lead muy interesado, solicita información de horarios flexibles'
+    },
+    {
+      id: 2,
+      type: 'whatsapp',
+      date: '2024-01-25T10:15:00Z',
+      outcome: 'Envió información inicial',
+      agent: 'Carlos Rodríguez',
+      notes: 'Respondió rápidamente, buena receptividad'
+    },
+    {
+      id: 3,
+      type: 'email',
+      date: '2024-01-24T16:30:00Z',
+      outcome: 'Propuesta enviada',
+      agent: 'Carlos Rodríguez',
+      notes: 'Envío de brochure y precios'
+    }
+  ];
 
-    setTimeout(loadLeadData, 1000);
-  }, [leadPhone]);
+  const notes = [
+    {
+      id: 1,
+      date: '2024-01-26T15:00:00Z',
+      author: 'Carlos Rodríguez',
+      content: 'Lead muy prometedor. Trabaja en empresa de contabilidad y busca actualizar conocimientos.'
+    },
+    {
+      id: 2,
+      date: '2024-01-25T11:00:00Z',
+      author: 'Carlos Rodríguez',
+      content: 'Prefiere clases nocturnas por horario laboral. Considerar curso de fin de semana.'
+    }
+  ];
+
+  const handleCall = () => {
+    toast({
+      title: "Iniciando llamada",
+      description: `Conectando con ${leadData.name} (${leadData.phone})`,
+    });
+  };
+
+  const handleWhatsApp = () => {
+    const cleanPhone = leadData.phone.replace(/\D/g, '');
+    const message = encodeURIComponent(`Hola ${leadData.name}, soy ${leadData.assignedAgent} de CCD Capacitación. ¿Tienes unos minutos para conversar sobre nuestros cursos?`);
+    const whatsappUrl = `https://wa.me/${cleanPhone}?text=${message}`;
+    window.open(whatsappUrl, '_blank');
+    
+    toast({
+      title: "WhatsApp abierto",
+      description: `Mensaje enviado a ${leadData.name}`,
+    });
+  };
+
+  const handleEmail = () => {
+    const subject = encodeURIComponent('Información sobre nuestros cursos - CCD Capacitación');
+    const body = encodeURIComponent(`Hola ${leadData.name},\n\nGracias por tu interés en nuestros cursos.\n\nSaludos,\n${leadData.assignedAgent}\nCCD Capacitación`);
+    window.location.href = `mailto:${leadData.email}?subject=${subject}&body=${body}`;
+  };
+
+  const saveNote = () => {
+    if (newNote.trim()) {
+      toast({
+        title: "Nota guardada",
+        description: "La nota ha sido agregada al historial del lead",
+      });
+      setNewNote('');
+      setEditingNote(false);
+    }
+  };
+
+  const scheduleCallback = () => {
+    toast({
+      title: "Callback programado",
+      description: "Se ha programado un recordatorio para contactar al lead",
+    });
+  };
 
   const getStatusColor = (status: string) => {
     const colors = {
-      active: 'bg-green-100 text-green-800',
-      expired: 'bg-red-100 text-red-800',
-      used: 'bg-blue-100 text-blue-800',
-      pending: 'bg-yellow-100 text-yellow-800'
+      'qualified': 'bg-green-100 text-green-800',
+      'new': 'bg-blue-100 text-blue-800',
+      'contacted': 'bg-yellow-100 text-yellow-800',
+      'proposal': 'bg-purple-100 text-purple-800'
     };
     return colors[status as keyof typeof colors] || 'bg-gray-100 text-gray-800';
   };
 
-  const getInterestStars = (level: number) => {
-    return Array.from({ length: 5 }, (_, i) => (
-      <Star 
-        key={i} 
-        className={`h-4 w-4 ${i < level ? 'text-yellow-500 fill-current' : 'text-gray-300'}`} 
-      />
-    ));
+  const getQualityColor = (quality: string) => {
+    const colors = {
+      'HOT': 'bg-red-500 text-white',
+      'WARM': 'bg-orange-500 text-white',
+      'COLD': 'bg-blue-500 text-white'
+    };
+    return colors[quality as keyof typeof colors] || 'bg-gray-500 text-white';
   };
-
-  const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('es-CO', {
-      style: 'currency',
-      currency: 'COP',
-      minimumFractionDigits: 0
-    }).format(amount);
-  };
-
-  const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('es-ES', {
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit'
-    });
-  };
-
-  const calculateDaysUntilExpiry = (validUntil: string) => {
-    const expiry = new Date(validUntil);
-    const now = new Date();
-    const diffTime = expiry.getTime() - now.getTime();
-    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-    return diffDays;
-  };
-
-  const addNewPromotion = () => {
-    toast({
-      title: "Nueva promoción",
-      description: "Función para agregar nueva promoción en desarrollo",
-    });
-  };
-
-  const activateLead = () => {
-    toast({
-      title: "Activar Lead",
-      description: "Función de activación de lead en desarrollo",
-    });
-  };
-
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center h-64">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
-      </div>
-    );
-  }
-
-  if (!lead) {
-    return (
-      <div className="text-center p-8">
-        <p className="text-gray-500">Lead no encontrado</p>
-      </div>
-    );
-  }
 
   return (
     <div className="space-y-6">
-      {/* Header del Lead */}
+      {/* Header del perfil */}
       <Card>
-        <CardContent className="pt-6">
+        <CardContent className="p-6">
           <div className="flex items-start justify-between">
-            <div className="flex items-center gap-4">
-              <Avatar className="h-16 w-16">
-                <AvatarFallback className="text-lg">
-                  {lead.name.split(' ').map(n => n[0]).join('')}
-                </AvatarFallback>
-              </Avatar>
-              <div>
-                <h1 className="text-2xl font-bold">{lead.name}</h1>
+            <div className="flex items-start gap-4">
+              <div className="w-16 h-16 bg-blue-500 rounded-full flex items-center justify-center text-white text-xl font-bold">
+                {leadData.name.split(' ').map(n => n[0]).join('')}
+              </div>
+              <div className="space-y-2">
+                <div className="flex items-center gap-2">
+                  <h2 className="text-2xl font-bold">{leadData.name}</h2>
+                  <Badge className={getStatusColor(leadData.status)}>
+                    {leadData.status}
+                  </Badge>
+                  <Badge className={getQualityColor(leadData.leadQuality)}>
+                    {leadData.leadQuality}
+                  </Badge>
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
+                  <div className="flex items-center gap-2">
+                    <Phone className="h-4 w-4 text-green-600" />
+                    <span>{leadData.phone}</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Mail className="h-4 w-4 text-blue-600" />
+                    <span>{leadData.email}</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <MapPin className="h-4 w-4 text-gray-600" />
+                    <span>{leadData.city}</span>
+                  </div>
+                </div>
                 <div className="flex items-center gap-4 text-sm text-gray-600">
-                  <div className="flex items-center gap-1">
-                    <Phone className="h-4 w-4" />
-                    {lead.phone}
-                  </div>
-                  {lead.email && (
-                    <div className="flex items-center gap-1">
-                      <Mail className="h-4 w-4" />
-                      {lead.email}
-                    </div>
-                  )}
-                  <div className="flex items-center gap-1">
-                    <MapPin className="h-4 w-4" />
-                    {lead.city}
-                  </div>
-                </div>
-                <div className="flex items-center gap-2 mt-2">
-                  <Badge variant="outline">{lead.stage}</Badge>
-                  <Badge className="bg-blue-100 text-blue-800">Score: {lead.score}</Badge>
-                  <div className="flex items-center gap-1">
-                    <Star className="h-4 w-4 text-yellow-500" />
-                    <span className="text-sm font-medium">{lead.score}/100</span>
-                  </div>
+                  <span>Score: <span className="font-bold text-orange-600">{leadData.score}</span></span>
+                  <span>Fuente: <span className="font-medium">{leadData.source}</span></span>
+                  <span>Curso: <span className="font-medium">{leadData.interestCourse}</span></span>
                 </div>
               </div>
             </div>
-            <div className="text-right">
-              <div className="text-sm text-gray-600">Ingresos Totales</div>
-              <div className="text-2xl font-bold text-green-600">{formatCurrency(lead.totalRevenue)}</div>
-              <div className="text-sm text-green-600">ROI: {lead.roi}%</div>
-              <div className="flex gap-2 mt-3">
-                <Button size="sm" onClick={activateLead}>
-                  <CheckCircle className="h-4 w-4 mr-2" />
-                  Activar
-                </Button>
-                <Button size="sm" variant="outline">
-                  <Edit className="h-4 w-4 mr-2" />
-                  Editar
-                </Button>
-              </div>
+            <div className="flex gap-2">
+              <Button onClick={handleCall} className="bg-green-600 hover:bg-green-700">
+                <Phone className="h-4 w-4 mr-2" />
+                Llamar
+              </Button>
+              <Button onClick={handleWhatsApp} className="bg-green-500 hover:bg-green-600">
+                <MessageSquare className="h-4 w-4 mr-2" />
+                WhatsApp
+              </Button>
+              <Button onClick={handleEmail} variant="outline">
+                <Mail className="h-4 w-4 mr-2" />
+                Email
+              </Button>
             </div>
           </div>
         </CardContent>
       </Card>
 
-      {/* Información de Campaña */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Target className="h-5 w-5" />
-            Origen de Campaña
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div>
-              <div className="text-sm text-gray-600">Código de Campaña</div>
-              <div className="font-bold text-blue-600">{lead.campaign.campaignCode}</div>
-            </div>
-            <div>
-              <div className="text-sm text-gray-600">Nombre de Campaña</div>
-              <div className="font-medium">{lead.campaign.campaignName}</div>
-            </div>
-            <div>
-              <div className="text-sm text-gray-600">Fuente</div>
-              <div className="font-medium">{lead.campaign.source}</div>
-            </div>
-            <div>
-              <div className="text-sm text-gray-600">Costo de Adquisición</div>
-              <div className="font-bold text-red-600">{formatCurrency(lead.campaign.cost)}</div>
-            </div>
-            <div>
-              <div className="text-sm text-gray-600">ROI de Campaña</div>
-              <div className="font-bold text-green-600">{lead.roi}%</div>
-            </div>
-            <div>
-              <div className="text-sm text-gray-600">Estado</div>
-              <Badge className={lead.campaign.isActive ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}>
-                {lead.campaign.isActive ? 'Activa' : 'Inactiva'}
-              </Badge>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Tabs principales */}
-      <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-        <TabsList className="grid w-full grid-cols-5">
+      <Tabs defaultValue="overview" className="space-y-6">
+        <TabsList className="grid w-full grid-cols-4">
           <TabsTrigger value="overview">Resumen</TabsTrigger>
-          <TabsTrigger value="promotions">
-            Promociones ({lead.promotions.length})
-          </TabsTrigger>
-          <TabsTrigger value="interactions">
-            Interacciones ({lead.interactions.length})
-          </TabsTrigger>
-          <TabsTrigger value="activations">
-            Activaciones ({lead.activations.length})
-          </TabsTrigger>
-          <TabsTrigger value="analytics">Analytics</TabsTrigger>
+          <TabsTrigger value="interactions">Interacciones</TabsTrigger>
+          <TabsTrigger value="notes">Notas</TabsTrigger>
+          <TabsTrigger value="tasks">Tareas</TabsTrigger>
         </TabsList>
 
         <TabsContent value="overview" className="space-y-6">
-          {/* Métricas principales */}
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            {/* Información básica */}
             <Card>
-              <CardContent className="pt-6">
-                <div className="flex items-center gap-2 mb-2">
-                  <Activity className="h-5 w-5 text-blue-600" />
-                  <span className="font-medium">Interacciones</span>
-                </div>
-                <p className="text-2xl font-bold">{lead.totalInteractions}</p>
-                <p className="text-sm text-gray-600">Total contactos</p>
+              <CardHeader>
+                <CardTitle className="flex items-center justify-between">
+                  <span>Información del Lead</span>
+                  <Button variant="ghost" size="sm" onClick={() => setEditingInfo(!editingInfo)}>
+                    <Edit className="h-4 w-4" />
+                  </Button>
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                {editingInfo ? (
+                  <div className="space-y-4">
+                    <Input placeholder="Nombre completo" defaultValue={leadData.name} />
+                    <Input placeholder="Email" defaultValue={leadData.email} />
+                    <Input placeholder="Teléfono" defaultValue={leadData.phone} />
+                    <Select defaultValue={leadData.interestCourse}>
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="Contabilidad Básica">Contabilidad Básica</SelectItem>
+                        <SelectItem value="Excel Avanzado">Excel Avanzado</SelectItem>
+                        <SelectItem value="Marketing Digital">Marketing Digital</SelectItem>
+                        <SelectItem value="Nómina">Nómina</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <div className="flex gap-2">
+                      <Button size="sm" onClick={() => setEditingInfo(false)}>
+                        <Save className="h-4 w-4 mr-2" />
+                        Guardar
+                      </Button>
+                      <Button variant="outline" size="sm" onClick={() => setEditingInfo(false)}>
+                        <X className="h-4 w-4 mr-2" />
+                        Cancelar
+                      </Button>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="space-y-3">
+                    <div>
+                      <label className="text-sm font-medium text-gray-600">Curso de Interés</label>
+                      <p className="font-medium">{leadData.interestCourse}</p>
+                    </div>
+                    <div>
+                      <label className="text-sm font-medium text-gray-600">Presupuesto</label>
+                      <p className="font-medium">{leadData.budget}</p>
+                    </div>
+                    <div>
+                      <label className="text-sm font-medium text-gray-600">Marco de Tiempo</label>
+                      <p className="font-medium">{leadData.timeframe}</p>
+                    </div>
+                    <div>
+                      <label className="text-sm font-medium text-gray-600">Fecha de Registro</label>
+                      <p className="font-medium">{new Date(leadData.registrationDate).toLocaleDateString()}</p>
+                    </div>
+                    <div>
+                      <label className="text-sm font-medium text-gray-600">Asesor Asignado</label>
+                      <p className="font-medium">{leadData.assignedAgent}</p>
+                    </div>
+                  </div>
+                )}
               </CardContent>
             </Card>
 
+            {/* Próximas acciones */}
             <Card>
-              <CardContent className="pt-6">
-                <div className="flex items-center gap-2 mb-2">
-                  <Tag className="h-5 w-5 text-purple-600" />
-                  <span className="font-medium">Promociones</span>
+              <CardHeader>
+                <CardTitle>Próximas Acciones</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="p-4 bg-blue-50 rounded-lg">
+                  <div className="flex items-start gap-2">
+                    <Clock className="h-5 w-5 text-blue-600 mt-0.5" />
+                    <div>
+                      <p className="font-medium text-blue-900">{leadData.nextAction}</p>
+                      <p className="text-sm text-blue-700">
+                        Último contacto: {new Date(leadData.lastContact).toLocaleString()}
+                      </p>
+                    </div>
+                  </div>
                 </div>
-                <p className="text-2xl font-bold">{lead.promotions.length}</p>
-                <p className="text-sm text-gray-600">Ofertas enviadas</p>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardContent className="pt-6">
-                <div className="flex items-center gap-2 mb-2">
-                  <CheckCircle className="h-5 w-5 text-green-600" />
-                  <span className="font-medium">Activaciones</span>
+                <div className="flex gap-2">
+                  <Button onClick={scheduleCallback} variant="outline" className="flex-1">
+                    <Calendar className="h-4 w-4 mr-2" />
+                    Programar Callback
+                  </Button>
+                  <Button className="flex-1">
+                    <FileText className="h-4 w-4 mr-2" />
+                    Enviar Propuesta
+                  </Button>
                 </div>
-                <p className="text-2xl font-bold">{lead.activations.length}</p>
-                <p className="text-sm text-gray-600">Compras realizadas</p>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardContent className="pt-6">
-                <div className="flex items-center gap-2 mb-2">
-                  <DollarSign className="h-5 w-5 text-yellow-600" />
-                  <span className="font-medium">Revenue</span>
-                </div>
-                <p className="text-2xl font-bold">{formatCurrency(lead.totalRevenue)}</p>
-                <p className="text-sm text-gray-600">Ingresos totales</p>
               </CardContent>
             </Card>
           </div>
+        </TabsContent>
 
-          {/* Timeline reciente */}
+        <TabsContent value="interactions" className="space-y-4">
           <Card>
             <CardHeader>
-              <CardTitle>Actividad Reciente</CardTitle>
+              <CardTitle>Historial de Interacciones</CardTitle>
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
-                {lead.interactions.slice(0, 3).map((interaction) => (
-                  <div key={interaction.id} className="flex gap-4 p-3 border rounded-lg">
-                    <div className="mt-1">
+                {interactions.map((interaction) => (
+                  <div key={interaction.id} className="border-l-2 border-blue-200 pl-4 pb-4">
+                    <div className="flex items-center gap-2 mb-2">
                       {interaction.type === 'call' && <Phone className="h-4 w-4 text-green-600" />}
-                      {interaction.type === 'whatsapp' && <MessageSquare className="h-4 w-4 text-green-600" />}
+                      {interaction.type === 'whatsapp' && <MessageSquare className="h-4 w-4 text-green-500" />}
                       {interaction.type === 'email' && <Mail className="h-4 w-4 text-blue-600" />}
-                      {interaction.type === 'promotion_sent' && <Tag className="h-4 w-4 text-purple-600" />}
-                    </div>
-                    <div className="flex-1">
-                      <div className="flex items-center gap-2 mb-1">
-                        <span className="font-medium">{interaction.agent}</span>
-                        <span className="text-sm text-gray-500">{formatDate(interaction.date)}</span>
-                        <Badge variant="outline">{interaction.channel}</Badge>
-                      </div>
-                      <p className="text-sm text-gray-700">{interaction.notes}</p>
-                      {interaction.outcome && (
-                        <p className="text-sm text-green-600 mt-1">Resultado: {interaction.outcome}</p>
+                      <span className="font-medium capitalize">{interaction.type}</span>
+                      {interaction.duration && (
+                        <Badge variant="outline">{interaction.duration}</Badge>
                       )}
+                      <span className="text-sm text-gray-500">
+                        {new Date(interaction.date).toLocaleString()}
+                      </span>
                     </div>
+                    <p className="font-medium mb-1">{interaction.outcome}</p>
+                    <p className="text-sm text-gray-600 mb-2">{interaction.notes}</p>
+                    <p className="text-xs text-gray-500">Por: {interaction.agent}</p>
                   </div>
                 ))}
               </div>
@@ -508,321 +356,82 @@ const LeadProfileComplete = ({ leadPhone }: { leadPhone: string }) => {
           </Card>
         </TabsContent>
 
-        <TabsContent value="promotions" className="space-y-6">
-          <div className="flex justify-between items-center">
-            <h3 className="text-lg font-semibold">Promociones y Ofertas</h3>
-            <Button onClick={addNewPromotion}>
-              <Plus className="h-4 w-4 mr-2" />
-              Nueva Promoción
-            </Button>
-          </div>
-
-          <div className="space-y-4">
-            {lead.promotions.map((promotion) => (
-              <Card key={promotion.id}>
-                <CardContent className="pt-6">
-                  <div className="flex items-start justify-between">
-                    <div className="flex-1">
-                      <div className="flex items-center gap-2 mb-2">
-                        <h4 className="font-bold">{promotion.productName}</h4>
-                        <Badge className={getStatusColor(promotion.status)}>
-                          {promotion.status}
-                        </Badge>
-                        <Badge variant="outline">{promotion.promotionCode}</Badge>
-                      </div>
-                      
-                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
-                        <div>
-                          <div className="text-sm text-gray-600">Precio Original</div>
-                          <div className="font-medium line-through text-red-600">{formatCurrency(promotion.originalPrice)}</div>
-                        </div>
-                        <div>
-                          <div className="text-sm text-gray-600">Precio con Descuento</div>
-                          <div className="font-bold text-green-600">{formatCurrency(promotion.discountedPrice)}</div>
-                        </div>
-                        <div>
-                          <div className="text-sm text-gray-600">Descuento</div>
-                          <div className="font-bold text-blue-600">{promotion.discountPercentage}% OFF</div>
-                        </div>
-                        <div>
-                          <div className="text-sm text-gray-600">Válido hasta</div>
-                          <div className="font-medium">{formatDate(promotion.validUntil)}</div>
-                          {calculateDaysUntilExpiry(promotion.validUntil) > 0 && (
-                            <div className="text-xs text-orange-600">
-                              {calculateDaysUntilExpiry(promotion.validUntil)} días restantes
-                            </div>
-                          )}
-                        </div>
-                      </div>
-
-                      <div className="flex items-center gap-4 mb-3">
-                        <div>
-                          <div className="text-sm text-gray-600">Nivel de Interés</div>
-                          <div className="flex items-center gap-1">
-                            {getInterestStars(promotion.interestLevel)}
-                          </div>
-                        </div>
-                        <div>
-                          <div className="text-sm text-gray-600">Mostrada</div>
-                          <div className="text-sm">{formatDate(promotion.dateShown)}</div>
-                        </div>
-                        {promotion.responseDate && (
-                          <div>
-                            <div className="text-sm text-gray-600">Respuesta</div>
-                            <div className="text-sm">{formatDate(promotion.responseDate)}</div>
-                          </div>
-                        )}
-                      </div>
-
-                      <div className="bg-gray-50 p-3 rounded">
-                        <div className="text-sm text-gray-600 mb-1">Notas del Asesor ({promotion.createdBy})</div>
-                        <p className="text-sm">{promotion.notes}</p>
-                      </div>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-        </TabsContent>
-
-        <TabsContent value="interactions" className="space-y-6">
-          <h3 className="text-lg font-semibold">Historial Completo de Interacciones</h3>
-          
-          <div className="space-y-4">
-            {lead.interactions.map((interaction) => (
-              <Card key={interaction.id}>
-                <CardContent className="pt-6">
-                  <div className="flex gap-4">
-                    <div className="mt-1">
-                      {interaction.type === 'call' && <Phone className="h-5 w-5 text-green-600" />}
-                      {interaction.type === 'whatsapp' && <MessageSquare className="h-5 w-5 text-green-600" />}
-                      {interaction.type === 'email' && <Mail className="h-5 w-5 text-blue-600" />}
-                      {interaction.type === 'promotion_sent' && <Tag className="h-5 w-5 text-purple-600" />}
-                      {interaction.type === 'activation' && <CheckCircle className="h-5 w-5 text-green-600" />}
-                    </div>
-                    <div className="flex-1">
-                      <div className="flex items-center gap-2 mb-2">
-                        <span className="font-bold">{interaction.agent}</span>
-                        <span className="text-sm text-gray-500">{formatDate(interaction.date)}</span>
-                        <Badge variant="outline">{interaction.channel}</Badge>
-                        {interaction.duration && (
-                          <Badge className="bg-blue-100 text-blue-800">
-                            {Math.floor(interaction.duration / 60)}:{(interaction.duration % 60).toString().padStart(2, '0')} min
-                          </Badge>
-                        )}
-                        {interaction.isPrivate && (
-                          <Badge variant="outline" className="text-orange-600">Nota Privada</Badge>
-                        )}
-                      </div>
-                      
-                      <p className="text-gray-700 mb-2">{interaction.notes}</p>
-                      
-                      {interaction.outcome && (
-                        <div className="bg-green-50 p-2 rounded mb-2">
-                          <span className="text-sm font-medium text-green-800">Resultado: </span>
-                          <span className="text-sm text-green-700">{interaction.outcome}</span>
-                        </div>
-                      )}
-                      
-                      {interaction.nextAction && (
-                        <div className="bg-blue-50 p-2 rounded mb-2">
-                          <span className="text-sm font-medium text-blue-800">Próxima acción: </span>
-                          <span className="text-sm text-blue-700">{interaction.nextAction}</span>
-                        </div>
-                      )}
-
-                      {interaction.promotionId && (
-                        <div className="bg-purple-50 p-2 rounded">
-                          <span className="text-sm font-medium text-purple-800">Promoción relacionada: </span>
-                          <span className="text-sm text-purple-700">
-                            {lead.promotions.find(p => p.id === interaction.promotionId)?.promotionCode}
-                          </span>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-        </TabsContent>
-
-        <TabsContent value="activations" className="space-y-6">
-          <h3 className="text-lg font-semibold">Historial de Activaciones y Compras</h3>
-          
-          <div className="space-y-4">
-            {lead.activations.map((activation) => (
-              <Card key={activation.id}>
-                <CardContent className="pt-6">
-                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                    <div>
-                      <h4 className="font-bold text-lg mb-3">{activation.productPurchased}</h4>
-                      
-                      <div className="space-y-2">
-                        <div className="flex justify-between">
-                          <span className="text-gray-600">Fecha de Activación:</span>
-                          <span className="font-medium">{formatDate(activation.activatedDate)}</span>
-                        </div>
-                        <div className="flex justify-between">
-                          <span className="text-gray-600">Activado por:</span>
-                          <span className="font-medium">{activation.activatedBy}</span>
-                        </div>
-                        <div className="flex justify-between">
-                          <span className="text-gray-600">Método:</span>
-                          <Badge variant="outline">{activation.activationMethod}</Badge>
-                        </div>
-                        <div className="flex justify-between">
-                          <span className="text-gray-600">Monto:</span>
-                          <span className="font-bold text-green-600">{formatCurrency(activation.amount)}</span>
-                        </div>
-                        <div className="flex justify-between">
-                          <span className="text-gray-600">Pago:</span>
-                          <span className="font-medium">{activation.paymentMethod}</span>
-                        </div>
-                        <div className="flex justify-between">
-                          <span className="text-gray-600">Estado del pago:</span>
-                          <Badge className={
-                            activation.paymentStatus === 'completed' ? 'bg-green-100 text-green-800' :
-                            activation.paymentStatus === 'pending' ? 'bg-yellow-100 text-yellow-800' :
-                            activation.paymentStatus === 'failed' ? 'bg-red-100 text-red-800' :
-                            'bg-gray-100 text-gray-800'
-                          }>
-                            {activation.paymentStatus}
-                          </Badge>
-                        </div>
-                      </div>
-                    </div>
-                    
-                    <div>
-                      {activation.satisfactionScore && (
-                        <div className="mb-4">
-                          <div className="text-sm text-gray-600 mb-2">Satisfacción del Cliente</div>
-                          <div className="flex items-center gap-2">
-                            <Progress value={activation.satisfactionScore * 20} className="flex-1" />
-                            <span className="font-bold">{activation.satisfactionScore}/5</span>
-                          </div>
-                        </div>
-                      )}
-                      
-                      <div className="bg-gray-50 p-3 rounded mb-3">
-                        <div className="text-sm text-gray-600 mb-1">Notas</div>
-                        <p className="text-sm">{activation.notes}</p>
-                      </div>
-                      
-                      {activation.followUpRequired && (
-                        <div className="flex items-center gap-2 text-orange-600">
-                          <AlertTriangle className="h-4 w-4" />
-                          <span className="text-sm font-medium">Requiere seguimiento</span>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-        </TabsContent>
-
-        <TabsContent value="analytics" className="space-y-6">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-lg">Rentabilidad</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-3">
-                  <div className="flex justify-between">
-                    <span>Costo de Adquisición:</span>
-                    <span className="font-medium text-red-600">{formatCurrency(lead.campaign.cost)}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span>Ingresos Generados:</span>
-                    <span className="font-medium text-green-600">{formatCurrency(lead.totalRevenue)}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span>Beneficio Neto:</span>
-                    <span className="font-bold text-green-600">{formatCurrency(lead.totalRevenue - lead.campaign.cost)}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span>ROI:</span>
-                    <span className="font-bold text-blue-600">{lead.roi}%</span>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-lg">Engagement</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-3">
-                  <div className="flex justify-between">
-                    <span>Días en pipeline:</span>
-                    <span className="font-medium">
-                      {Math.floor((new Date().getTime() - new Date(lead.createdAt).getTime()) / (1000 * 60 * 60 * 24))}
-                    </span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span>Promociones mostradas:</span>
-                    <span className="font-medium">{lead.promotions.length}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span>Tasa de respuesta:</span>
-                    <span className="font-medium">
-                      {Math.round((lead.promotions.filter(p => p.responseDate).length / lead.promotions.length) * 100)}%
-                    </span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span>Tasa de conversión:</span>
-                    <span className="font-medium">
-                      {Math.round((lead.activations.length / lead.promotions.length) * 100)}%
-                    </span>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-lg">Comportamiento</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-3">
-                  <div className="flex justify-between">
-                    <span>Canal preferido:</span>
-                    <span className="font-medium">WhatsApp</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span>Mejor horario:</span>
-                    <span className="font-medium">14:00 - 16:00</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span>Tiempo promedio respuesta:</span>
-                    <span className="font-medium">2.5 horas</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span>Score de calidad:</span>
-                    <span className="font-bold text-blue-600">{lead.score}/100</span>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          </div>
-
-          {/* Tags del lead */}
+        <TabsContent value="notes" className="space-y-4">
           <Card>
             <CardHeader>
-              <CardTitle>Tags y Categorización</CardTitle>
+              <CardTitle className="flex items-center justify-between">
+                <span>Notas del Lead</span>
+                <Button onClick={() => setEditingNote(true)} size="sm">
+                  <Plus className="h-4 w-4 mr-2" />
+                  Nueva Nota
+                </Button>
+              </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="flex flex-wrap gap-2">
-                {lead.tags.map((tag, index) => (
-                  <Badge key={index} variant="secondary" className="text-sm">
-                    {tag}
-                  </Badge>
+              {editingNote && (
+                <div className="mb-4 p-4 border rounded-lg">
+                  <Textarea
+                    placeholder="Escribe tu nota aquí..."
+                    value={newNote}
+                    onChange={(e) => setNewNote(e.target.value)}
+                    className="mb-2"
+                  />
+                  <div className="flex gap-2">
+                    <Button onClick={saveNote} size="sm">
+                      <Save className="h-4 w-4 mr-2" />
+                      Guardar
+                    </Button>
+                    <Button variant="outline" size="sm" onClick={() => {
+                      setEditingNote(false);
+                      setNewNote('');
+                    }}>
+                      <X className="h-4 w-4 mr-2" />
+                      Cancelar
+                    </Button>
+                  </div>
+                </div>
+              )}
+              
+              <div className="space-y-3">
+                {notes.map((note) => (
+                  <div key={note.id} className="p-3 bg-gray-50 rounded-lg">
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="font-medium">{note.author}</span>
+                      <span className="text-sm text-gray-500">
+                        {new Date(note.date).toLocaleString()}
+                      </span>
+                    </div>
+                    <p className="text-sm">{note.content}</p>
+                  </div>
                 ))}
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="tasks" className="space-y-4">
+          <Card>
+            <CardHeader>
+              <CardTitle>Tareas Pendientes</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-3">
+                <div className="flex items-center gap-3 p-3 border rounded-lg">
+                  <input type="checkbox" className="w-4 h-4" />
+                  <div className="flex-1">
+                    <p className="font-medium">Enviar propuesta comercial</p>
+                    <p className="text-sm text-gray-600">Vencimiento: Mañana</p>
+                  </div>
+                  <Badge className="bg-orange-500">Alta</Badge>
+                </div>
+                <div className="flex items-center gap-3 p-3 border rounded-lg">
+                  <input type="checkbox" className="w-4 h-4" />
+                  <div className="flex-1">
+                    <p className="font-medium">Llamada de seguimiento</p>
+                    <p className="text-sm text-gray-600">Vencimiento: En 2 días</p>
+                  </div>
+                  <Badge variant="outline">Media</Badge>
+                </div>
               </div>
             </CardContent>
           </Card>
