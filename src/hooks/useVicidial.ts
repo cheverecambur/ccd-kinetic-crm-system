@@ -118,7 +118,7 @@ export const useVicidial = () => {
         agent_user: user.username,
         function: 'external_dial',
         value: params.phoneNumber,
-        phone_code: params.phoneCode || '57',
+        phone_code: params.phoneCode || '51',
         search: 'YES',
         preview: 'NO',
         focus: 'YES'
