@@ -5,7 +5,6 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { 
   Search, 
   Filter, 
@@ -18,7 +17,6 @@ import {
 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
-import LeadCard from '@/components/LeadCard';
 
 const LeadsManagement = () => {
   const { user } = useAuth();
@@ -32,9 +30,9 @@ const LeadsManagement = () => {
     {
       id: '1',
       name: 'María González',
-      phone: '+57 301 234 5678',
+      phone: '+51 301 234 5678',
       email: 'maria.gonzalez@email.com',
-      city: 'Bogotá',
+      city: 'Lima',
       status: 'qualified',
       score: 85,
       source: 'Facebook',
@@ -44,9 +42,9 @@ const LeadsManagement = () => {
     {
       id: '2',
       name: 'Carlos Rodríguez',
-      phone: '+57 300 876 5432',
+      phone: '+51 300 876 5432',
       email: 'carlos.rodriguez@email.com',
-      city: 'Medellín',
+      city: 'Arequipa',
       status: 'new',
       score: 92,
       source: 'Google',
@@ -56,9 +54,9 @@ const LeadsManagement = () => {
     {
       id: '3',
       name: 'Ana Martínez',
-      phone: '+57 301 567 8901',
+      phone: '+51 301 567 8901',
       email: 'ana.martinez@email.com',
-      city: 'Cali',
+      city: 'Trujillo',
       status: 'contacted',
       score: 78,
       source: 'TikTok',
@@ -68,9 +66,9 @@ const LeadsManagement = () => {
     {
       id: '4',
       name: 'Luis Pérez',
-      phone: '+57 315 246 8135',
+      phone: '+51 315 246 8135',
       email: 'luis.perez@email.com',
-      city: 'Barranquilla',
+      city: 'Cusco',
       status: 'proposal',
       score: 95,
       source: 'Referido',
@@ -80,9 +78,9 @@ const LeadsManagement = () => {
     {
       id: '5',
       name: 'Sandra López',
-      phone: '+57 312 345 6789',
+      phone: '+51 312 345 6789',
       email: 'sandra.lopez@email.com',
-      city: 'Cartagena',
+      city: 'Piura',
       status: 'qualified',
       score: 88,
       source: 'Instagram',
@@ -92,8 +90,8 @@ const LeadsManagement = () => {
     {
       id: '6',
       name: 'Andrés Gómez',
-      phone: '+57 318 654 3210',
-      city: 'Bucaramanga',
+      phone: '+51 318 654 3210',
+      city: 'Chiclayo',
       status: 'new',
       score: 72,
       source: 'Facebook',
@@ -122,10 +120,21 @@ const LeadsManagement = () => {
     { label: 'En Propuesta', value: leads.filter(l => l.status === 'proposal').length, icon: MessageSquare, color: 'text-orange-600' }
   ];
 
+  const getStatusColor = (status: string) => {
+    const colors = {
+      'new': 'bg-blue-100 text-blue-800',
+      'contacted': 'bg-yellow-100 text-yellow-800',
+      'qualified': 'bg-green-100 text-green-800',
+      'proposal': 'bg-purple-100 text-purple-800',
+      'closed': 'bg-gray-100 text-gray-800'
+    };
+    return colors[status as keyof typeof colors] || 'bg-gray-100 text-gray-800';
+  };
+
   return (
-    <div className="p-6 space-y-6">
+    <div className="p-6 space-y-6 max-w-7xl mx-auto">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col md:flex-row md:items-center md:justify-between space-y-4 md:space-y-0">
         <div>
           <h1 className="text-3xl font-bold text-gray-900">
             {user?.role === 'AGENT' ? 'Mis Leads' : 'Gestión de Leads'}
@@ -220,11 +229,50 @@ const LeadsManagement = () => {
       {/* Lista de leads */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         {filteredLeads.map((lead) => (
-          <LeadCard 
-            key={lead.id} 
-            lead={lead} 
-            onView={handleViewLead}
-          />
+          <Card key={lead.id} className="hover:shadow-md transition-shadow">
+            <CardContent className="p-4">
+              <div className="space-y-3">
+                <div className="flex items-start justify-between">
+                  <div>
+                    <h3 className="font-semibold text-lg">{lead.name}</h3>
+                    <p className="text-sm text-gray-600">{lead.phone}</p>
+                    {lead.email && <p className="text-sm text-gray-500">{lead.email}</p>}
+                  </div>
+                  <div className="text-right">
+                    <div className="text-lg font-bold text-green-600">{lead.score}</div>
+                    <div className="text-xs text-gray-500">Score</div>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-2">
+                  <Badge className={getStatusColor(lead.status)}>
+                    {lead.status}
+                  </Badge>
+                  <Badge variant="outline" className="text-xs">
+                    {lead.source}
+                  </Badge>
+                </div>
+
+                <div className="text-sm text-gray-600">
+                  <p><strong>Ciudad:</strong> {lead.city}</p>
+                  {lead.nextAction && (
+                    <p className="text-blue-600 mt-1">
+                      <strong>Próxima acción:</strong> {lead.nextAction}
+                    </p>
+                  )}
+                </div>
+
+                <div className="flex gap-2 pt-2">
+                  <Button size="sm" className="flex-1" onClick={() => handleViewLead(lead.id)}>
+                    Ver Perfil
+                  </Button>
+                  <Button size="sm" variant="outline">
+                    <Phone className="h-4 w-4" />
+                  </Button>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
         ))}
       </div>
 

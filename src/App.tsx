@@ -39,7 +39,7 @@ function App() {
     <QueryClientProvider client={queryClient}>
       <AuthProvider>
         <Router>
-          <div className="min-h-screen bg-gray-50 overflow-hidden">
+          <div className="min-h-screen bg-gray-50">
             <Routes>
               {/* Rutas públicas */}
               <Route path="/login" element={<Login />} />
@@ -49,10 +49,10 @@ function App() {
                 path="/*"
                 element={
                   <ProtectedRoute>
-                    <div className="flex h-screen">
+                    <div className="flex min-h-screen">
                       <Navigation />
-                      <main className="flex-1 ml-0 lg:ml-64 overflow-y-auto">
-                        <div className="h-full">
+                      <main className="flex-1 ml-0 lg:ml-64 overflow-y-auto bg-gray-50">
+                        <div className="min-h-full">
                           <Routes>
                             <Route path="/" element={<Index />} />
                             <Route path="/dashboard" element={<Dashboard />} />
