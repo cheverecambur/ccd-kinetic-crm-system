@@ -39,7 +39,7 @@ function App() {
     <QueryClientProvider client={queryClient}>
       <AuthProvider>
         <Router>
-          <div className="min-h-screen bg-gray-50">
+          <div className="min-h-screen bg-gray-50 overflow-hidden">
             <Routes>
               {/* Rutas públicas */}
               <Route path="/login" element={<Login />} />
@@ -49,36 +49,38 @@ function App() {
                 path="/*"
                 element={
                   <ProtectedRoute>
-                    <div className="flex">
+                    <div className="flex h-screen">
                       <Navigation />
-                      <main className="flex-1 ml-64">
-                        <Routes>
-                          <Route path="/" element={<Index />} />
-                          <Route path="/dashboard" element={<Dashboard />} />
-                          
-                          {/* Rutas específicas del asesor */}
-                          <Route path="/agent" element={<AdvisorDashboard />} />
-                          <Route path="/advisor" element={<AdvisorDashboard />} />
-                          <Route path="/advisor-dashboard" element={<AdvisorDashboard />} />
-                          
-                          {/* Rutas administrativas */}
-                          <Route path="/admin" element={<AdminPanel />} />
-                          <Route path="/leads" element={<LeadsManagement />} />
-                          <Route path="/leads/:id" element={<LeadProfile />} />
-                          <Route path="/call-center" element={<CallCenter />} />
-                          <Route path="/callcenter" element={<CallCenter />} />
-                          <Route path="/campaigns" element={<CampaignManagement />} />
-                          <Route path="/reports" element={<Reports />} />
-                          <Route path="/quality" element={<QualityManagement />} />
-                          <Route path="/communication" element={<Communication />} />
-                          <Route path="/advisor-performance" element={<AdvisorPerformance />} />
-                          
-                          {/* Redirecciones */}
-                          <Route path="/index" element={<Navigate to="/" replace />} />
-                          
-                          {/* 404 */}
-                          <Route path="*" element={<NotFound />} />
-                        </Routes>
+                      <main className="flex-1 ml-0 lg:ml-64 overflow-y-auto">
+                        <div className="h-full">
+                          <Routes>
+                            <Route path="/" element={<Index />} />
+                            <Route path="/dashboard" element={<Dashboard />} />
+                            
+                            {/* Rutas específicas del asesor */}
+                            <Route path="/agent" element={<AdvisorDashboard />} />
+                            <Route path="/advisor" element={<AdvisorDashboard />} />
+                            <Route path="/advisor-dashboard" element={<AdvisorDashboard />} />
+                            
+                            {/* Rutas administrativas */}
+                            <Route path="/admin" element={<AdminPanel />} />
+                            <Route path="/leads" element={<LeadsManagement />} />
+                            <Route path="/leads/:id" element={<LeadProfile />} />
+                            <Route path="/call-center" element={<CallCenter />} />
+                            <Route path="/callcenter" element={<CallCenter />} />
+                            <Route path="/campaigns" element={<CampaignManagement />} />
+                            <Route path="/reports" element={<Reports />} />
+                            <Route path="/quality" element={<QualityManagement />} />
+                            <Route path="/communication" element={<Communication />} />
+                            <Route path="/advisor-performance" element={<AdvisorPerformance />} />
+                            
+                            {/* Redirecciones */}
+                            <Route path="/index" element={<Navigate to="/" replace />} />
+                            
+                            {/* 404 */}
+                            <Route path="*" element={<NotFound />} />
+                          </Routes>
+                        </div>
                       </main>
                     </div>
                   </ProtectedRoute>
