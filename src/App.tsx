@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
@@ -28,7 +27,7 @@ import './App.css';
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
-      staleTime: 5 * 60 * 1000, // 5 minutos
+      staleTime: 5 * 60 * 1000,
       retry: 3,
     },
   },
@@ -41,10 +40,10 @@ function App() {
         <Router>
           <div className="min-h-screen bg-gray-50">
             <Routes>
-              {/* Rutas públicas */}
+              {/* Public routes */}
               <Route path="/login" element={<Login />} />
               
-              {/* Rutas protegidas */}
+              {/* Protected routes */}
               <Route
                 path="/*"
                 element={
@@ -57,24 +56,30 @@ function App() {
                             <Route path="/" element={<Index />} />
                             <Route path="/dashboard" element={<Dashboard />} />
                             
-                            {/* Rutas específicas del asesor */}
+                            {/* Admin routes */}
+                            <Route path="/admin" element={<AdminPanel />} />
+                            
+                            {/* Agent/Advisor routes */}
                             <Route path="/agent" element={<AdvisorDashboard />} />
                             <Route path="/advisor" element={<AdvisorDashboard />} />
                             <Route path="/advisor-dashboard" element={<AdvisorDashboard />} />
                             
-                            {/* Rutas administrativas */}
-                            <Route path="/admin" element={<AdminPanel />} />
+                            {/* Leads management */}
                             <Route path="/leads" element={<LeadsManagement />} />
                             <Route path="/leads/:id" element={<LeadProfile />} />
+                            
+                            {/* Call center */}
                             <Route path="/call-center" element={<CallCenter />} />
                             <Route path="/callcenter" element={<CallCenter />} />
+                            
+                            {/* Other features */}
                             <Route path="/campaigns" element={<CampaignManagement />} />
                             <Route path="/reports" element={<Reports />} />
                             <Route path="/quality" element={<QualityManagement />} />
                             <Route path="/communication" element={<Communication />} />
                             <Route path="/advisor-performance" element={<AdvisorPerformance />} />
                             
-                            {/* Redirecciones */}
+                            {/* Redirects */}
                             <Route path="/index" element={<Navigate to="/" replace />} />
                             
                             {/* 404 */}
