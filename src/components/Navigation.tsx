@@ -35,7 +35,7 @@ const Navigation = () => {
     const baseItems = [
       { 
         name: 'Dashboard', 
-        href: user.role === 'ADMIN' ? '/admin' : (user.role === 'AGENT' ? '/agent' : '/'), 
+        href: user.role === 'ADMIN' ? '/admin' : (user.role === 'AGENT' ? '/advisor-dashboard' : '/'), 
         icon: LayoutDashboard,
         badge: null
       }
@@ -45,7 +45,7 @@ const Navigation = () => {
       return [
         ...baseItems,
         { name: 'Leads', href: '/leads', icon: Users, badge: '24' },
-        { name: 'Call Center', href: '/callcenter', icon: Phone, badge: '12' },
+        { name: 'Call Center', href: '/call-center', icon: Phone, badge: '12' },
         { name: 'Campañas', href: '/campaigns', icon: Target, badge: null },
         { name: 'Reportes', href: '/reports', icon: BarChart3, badge: null },
         { name: 'Calidad', href: '/quality', icon: Headphones, badge: '3' },
@@ -55,7 +55,7 @@ const Navigation = () => {
       return [
         ...baseItems,
         { name: 'Leads Equipo', href: '/leads', icon: Users, badge: '24' },
-        { name: 'Call Center', href: '/callcenter', icon: Phone, badge: '12' },
+        { name: 'Call Center', href: '/call-center', icon: Phone, badge: '12' },
         { name: 'Calidad', href: '/quality', icon: Headphones, badge: '3' },
         { name: 'Reportes', href: '/reports', icon: BarChart3, badge: null }
       ];
@@ -63,7 +63,7 @@ const Navigation = () => {
       return [
         ...baseItems,
         { name: 'Mis Leads', href: '/leads', icon: Users, badge: '8' },
-        { name: 'Call Center', href: '/callcenter', icon: Phone, badge: '3' },
+        { name: 'Call Center', href: '/call-center', icon: Phone, badge: '3' },
         { name: 'Mi Rendimiento', href: '/advisor-performance', icon: TrendingUp, badge: null }
       ];
     }
@@ -72,7 +72,7 @@ const Navigation = () => {
   const navigationItems = getNavigationItems();
 
   const isActive = (href: string) => {
-    if (href === '/' || href === '/admin' || href === '/agent') {
+    if (href === '/' || href === '/admin' || href === '/advisor-dashboard') {
       return location.pathname === href;
     }
     return location.pathname.startsWith(href);
@@ -94,87 +94,72 @@ const Navigation = () => {
 
   return (
     <>
-      {/* Desktop Navigation */}
-      <nav className="hidden lg:flex bg-white border-b border-gray-200 px-6 py-4">
-        <div className="flex items-center justify-between w-full">
-          {/* Logo y marca */}
-          <div className="flex items-center space-x-4">
-            <div className="flex items-center space-x-2">
-              <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center">
-                <span className="text-white font-bold text-sm">CCD</span>
-              </div>
-              <span className="font-bold text-xl text-gray-900">CRM Capacitación</span>
-            </div>
+      {/* Desktop Sidebar */}
+      <nav className="hidden lg:flex lg:flex-col bg-white border-r border-gray-200 w-64 min-h-screen">
+        {/* Logo */}
+        <div className="flex items-center px-6 py-4 border-b border-gray-200">
+          <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center mr-3">
+            <span className="text-white font-bold text-sm">CCD</span>
           </div>
+          <span className="font-bold text-xl text-gray-900">CRM</span>
+        </div>
 
-          {/* Navigation Items */}
-          <div className="flex items-center space-x-1">
+        {/* Navigation Items */}
+        <div className="flex-1 px-4 py-6">
+          <nav className="space-y-2">
             {navigationItems.map((item) => {
               const Icon = item.icon;
               return (
                 <Link key={item.name} to={item.href}>
-                  <Button
-                    variant={isActive(item.href) ? "default" : "ghost"}
-                    className={`relative ${isActive(item.href) ? 'bg-blue-600 text-white' : 'text-gray-600 hover:text-gray-900'}`}
-                  >
-                    <Icon className="h-4 w-4 mr-2" />
-                    {item.name}
+                  <div className={`flex items-center px-3 py-2 rounded-lg transition-colors ${
+                    isActive(item.href) 
+                      ? 'bg-blue-600 text-white' 
+                      : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900'
+                  }`}>
+                    <Icon className="h-5 w-5 mr-3" />
+                    <span className="font-medium">{item.name}</span>
                     {item.badge && (
                       <Badge 
                         variant="destructive" 
-                        className="ml-2 px-1.5 py-0.5 text-xs"
+                        className="ml-auto text-xs"
                       >
                         {item.badge}
                       </Badge>
                     )}
-                  </Button>
+                  </div>
                 </Link>
               );
             })}
-          </div>
+          </nav>
+        </div>
 
-          {/* Right side items */}
-          <div className="flex items-center space-x-3">
-            {/* Search */}
-            <Button variant="ghost" size="sm">
-              <Search className="h-4 w-4" />
-            </Button>
-            
-            {/* Notifications */}
-            <Button variant="ghost" size="sm" className="relative">
-              <Bell className="h-4 w-4" />
-              <Badge 
-                variant="destructive" 
-                className="absolute -top-1 -right-1 px-1.5 py-0.5 text-xs"
-              >
-                3
+        {/* User section */}
+        <div className="px-4 py-4 border-t border-gray-200">
+          <div className="flex items-center mb-3">
+            <User className="h-8 w-8 text-gray-400 mr-3" />
+            <div className="flex-1">
+              <p className="text-sm font-medium text-gray-900">{user?.name}</p>
+              <Badge className={`${getRoleBadge()} text-xs`}>
+                {user?.role}
               </Badge>
-            </Button>
-            
-            {/* Settings */}
+            </div>
+          </div>
+          <div className="flex space-x-2">
             <Button variant="ghost" size="sm">
               <Settings className="h-4 w-4" />
             </Button>
-            
-            {/* User menu */}
-            <div className="flex items-center space-x-2">
-              <Badge className={getRoleBadge()}>
-                {user?.role}
-              </Badge>
-              <Button variant="ghost" size="sm">
-                <User className="h-4 w-4 mr-2" />
-                {user?.name}
-              </Button>
-              <Button variant="ghost" size="sm" onClick={handleLogout}>
-                <LogOut className="h-4 w-4" />
-              </Button>
-            </div>
+            <Button variant="ghost" size="sm">
+              <Bell className="h-4 w-4" />
+            </Button>
+            <Button variant="ghost" size="sm" onClick={handleLogout}>
+              <LogOut className="h-4 w-4" />
+            </Button>
           </div>
         </div>
       </nav>
 
       {/* Mobile Navigation */}
-      <nav className="lg:hidden bg-white border-b border-gray-200">
+      <nav className="lg:hidden bg-white border-b border-gray-200 fixed top-0 left-0 right-0 z-50">
         <div className="px-4 py-3">
           <div className="flex items-center justify-between">
             {/* Logo */}
@@ -264,6 +249,9 @@ const Navigation = () => {
           </div>
         )}
       </nav>
+
+      {/* Mobile content padding */}
+      <div className="lg:hidden h-16"></div>
     </>
   );
 };
