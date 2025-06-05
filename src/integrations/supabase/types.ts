@@ -9,6 +9,183 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
+      active_calls: {
+        Row: {
+          call_type: string | null
+          conference_number: string | null
+          created_at: string | null
+          duration_seconds: number | null
+          end_time: string | null
+          id: string
+          lead_id: number | null
+          phone_number: string | null
+          recording_id: string | null
+          start_time: string | null
+          status: string | null
+          uniqueid: string | null
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          call_type?: string | null
+          conference_number?: string | null
+          created_at?: string | null
+          duration_seconds?: number | null
+          end_time?: string | null
+          id?: string
+          lead_id?: number | null
+          phone_number?: string | null
+          recording_id?: string | null
+          start_time?: string | null
+          status?: string | null
+          uniqueid?: string | null
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          call_type?: string | null
+          conference_number?: string | null
+          created_at?: string | null
+          duration_seconds?: number | null
+          end_time?: string | null
+          id?: string
+          lead_id?: number | null
+          phone_number?: string | null
+          recording_id?: string | null
+          start_time?: string | null
+          status?: string | null
+          uniqueid?: string | null
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
+      agent_pauses: {
+        Row: {
+          comments: string | null
+          created_at: string | null
+          duration_seconds: number | null
+          end_time: string | null
+          id: string
+          pause_code: string | null
+          start_time: string | null
+          user_id: string
+        }
+        Insert: {
+          comments?: string | null
+          created_at?: string | null
+          duration_seconds?: number | null
+          end_time?: string | null
+          id?: string
+          pause_code?: string | null
+          start_time?: string | null
+          user_id: string
+        }
+        Update: {
+          comments?: string | null
+          created_at?: string | null
+          duration_seconds?: number | null
+          end_time?: string | null
+          id?: string
+          pause_code?: string | null
+          start_time?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
+      agent_sessions: {
+        Row: {
+          campaign_id: string | null
+          conf_exten: string | null
+          created_at: string | null
+          extension: string | null
+          id: string
+          is_active: boolean | null
+          login_time: string | null
+          logout_time: string | null
+          phone: string | null
+          server_ip: string | null
+          session_id: string
+          status: string | null
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          campaign_id?: string | null
+          conf_exten?: string | null
+          created_at?: string | null
+          extension?: string | null
+          id?: string
+          is_active?: boolean | null
+          login_time?: string | null
+          logout_time?: string | null
+          phone?: string | null
+          server_ip?: string | null
+          session_id: string
+          status?: string | null
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          campaign_id?: string | null
+          conf_exten?: string | null
+          created_at?: string | null
+          extension?: string | null
+          id?: string
+          is_active?: boolean | null
+          login_time?: string | null
+          logout_time?: string | null
+          phone?: string | null
+          server_ip?: string | null
+          session_id?: string
+          status?: string | null
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
+      agent_stats: {
+        Row: {
+          calls_today: number | null
+          conversions: number | null
+          id: string
+          last_call_time: string | null
+          leads_contacted: number | null
+          pause_time_seconds: number | null
+          status: string | null
+          talk_time_seconds: number | null
+          updated_at: string | null
+          user_id: string
+          wait_time_seconds: number | null
+        }
+        Insert: {
+          calls_today?: number | null
+          conversions?: number | null
+          id?: string
+          last_call_time?: string | null
+          leads_contacted?: number | null
+          pause_time_seconds?: number | null
+          status?: string | null
+          talk_time_seconds?: number | null
+          updated_at?: string | null
+          user_id: string
+          wait_time_seconds?: number | null
+        }
+        Update: {
+          calls_today?: number | null
+          conversions?: number | null
+          id?: string
+          last_call_time?: string | null
+          leads_contacted?: number | null
+          pause_time_seconds?: number | null
+          status?: string | null
+          talk_time_seconds?: number | null
+          updated_at?: string | null
+          user_id?: string
+          wait_time_seconds?: number | null
+        }
+        Relationships: []
+      }
       call_logs: {
         Row: {
           call_date: string | null
@@ -86,6 +263,48 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      call_recordings: {
+        Row: {
+          created_at: string | null
+          end_time: string | null
+          filename: string | null
+          id: string
+          lead_id: number | null
+          length_seconds: number | null
+          location: string | null
+          recording_id: string | null
+          start_time: string | null
+          uniqueid: string
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          end_time?: string | null
+          filename?: string | null
+          id?: string
+          lead_id?: number | null
+          length_seconds?: number | null
+          location?: string | null
+          recording_id?: string | null
+          start_time?: string | null
+          uniqueid: string
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          end_time?: string | null
+          filename?: string | null
+          id?: string
+          lead_id?: number | null
+          length_seconds?: number | null
+          location?: string | null
+          recording_id?: string | null
+          start_time?: string | null
+          uniqueid?: string
+          user_id?: string | null
+        }
+        Relationships: []
       }
       callbacks: {
         Row: {
@@ -505,6 +724,36 @@ export type Database = {
           user_group?: string | null
           user_id?: string
           vicidial_active?: boolean | null
+        }
+        Relationships: []
+      }
+      vicidial_settings: {
+        Row: {
+          created_at: string | null
+          description: string | null
+          id: string
+          is_active: boolean | null
+          setting_key: string
+          setting_value: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          is_active?: boolean | null
+          setting_key: string
+          setting_value?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          is_active?: boolean | null
+          setting_key?: string
+          setting_value?: string | null
+          updated_at?: string | null
         }
         Relationships: []
       }
