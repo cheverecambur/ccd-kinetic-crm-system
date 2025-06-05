@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -13,10 +12,13 @@ import {
   Users,
   TrendingUp,
   Phone,
-  MessageSquare
+  MessageSquare,
+  LayoutGrid,
+  List
 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
+import LeadsListView from '@/components/LeadsListView';
 
 const LeadsManagement = () => {
   const { user } = useAuth();
@@ -24,6 +26,7 @@ const LeadsManagement = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [filterStatus, setFilterStatus] = useState('all');
   const [filterSource, setFilterSource] = useState('all');
+  const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
 
   // Datos de ejemplo para leads
   const leads = [
@@ -180,8 +183,26 @@ const LeadsManagement = () => {
 
       {/* Filtros y búsqueda */}
       <Card>
-        <CardHeader>
+        <CardHeader className="flex flex-row items-center justify-between">
           <CardTitle>Filtros</CardTitle>
+          <div className="flex items-center border rounded-lg p-1">
+            <Button
+              variant={viewMode === 'grid' ? 'default' : 'ghost'}
+              size="sm"
+              onClick={() => setViewMode('grid')}
+              className="h-8 w-8 p-0"
+            >
+              <LayoutGrid className="h-4 w-4" />
+            </Button>
+            <Button
+              variant={viewMode === 'list' ? 'default' : 'ghost'}
+              size="sm"
+              onClick={() => setViewMode('list')}
+              className="h-8 w-8 p-0"
+            >
+              <List className="h-4 w-4" />
+            </Button>
+          </div>
         </CardHeader>
         <CardContent>
           <div className="flex flex-col md:flex-row gap-4">
@@ -226,55 +247,63 @@ const LeadsManagement = () => {
         </CardContent>
       </Card>
 
-      {/* Lista de leads */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-        {filteredLeads.map((lead) => (
-          <Card key={lead.id} className="hover:shadow-md transition-shadow">
-            <CardContent className="p-4">
-              <div className="space-y-3">
-                <div className="flex items-start justify-between">
-                  <div>
-                    <h3 className="font-semibold text-lg">{lead.name}</h3>
-                    <p className="text-sm text-gray-600">{lead.phone}</p>
-                    {lead.email && <p className="text-sm text-gray-500">{lead.email}</p>}
+      {/* Lista de leads - Vista condicional */}
+      {viewMode === 'list' ? (
+        <LeadsListView 
+          leads={filteredLeads}
+          onCall={(phone, name, id) => console.log('Call:', phone, name, id)}
+          onView={handleViewLead}
+        />
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          {filteredLeads.map((lead) => (
+            <Card key={lead.id} className="hover:shadow-md transition-shadow">
+              <CardContent className="p-4">
+                <div className="space-y-3">
+                  <div className="flex items-start justify-between">
+                    <div>
+                      <h3 className="font-semibold text-lg">{lead.name}</h3>
+                      <p className="text-sm text-gray-600">{lead.phone}</p>
+                      {lead.email && <p className="text-sm text-gray-500">{lead.email}</p>}
+                    </div>
+                    <div className="text-right">
+                      <div className="text-lg font-bold text-green-600">{lead.score}</div>
+                      <div className="text-xs text-gray-500">Score</div>
+                    </div>
                   </div>
-                  <div className="text-right">
-                    <div className="text-lg font-bold text-green-600">{lead.score}</div>
-                    <div className="text-xs text-gray-500">Score</div>
+
+                  <div className="flex items-center gap-2">
+                    <Badge className={getStatusColor(lead.status)}>
+                      {lead.status}
+                    </Badge>
+                    <Badge variant="outline" className="text-xs">
+                      {lead.source}
+                    </Badge>
+                  </div>
+
+                  <div className="text-sm text-gray-600">
+                    <p><strong>Ciudad:</strong> {lead.city}</p>
+                    {lead.nextAction && (
+                      <p className="text-blue-600 mt-1">
+                        <strong>Próxima acción:</strong> {lead.nextAction}
+                      </p>
+                    )}
+                  </div>
+
+                  <div className="flex gap-2 pt-2">
+                    <Button size="sm" className="flex-1" onClick={() => handleViewLead(lead.id)}>
+                      Ver Perfil
+                    </Button>
+                    <Button size="sm" variant="outline">
+                      <Phone className="h-4 w-4" />
+                    </Button>
                   </div>
                 </div>
-
-                <div className="flex items-center gap-2">
-                  <Badge className={getStatusColor(lead.status)}>
-                    {lead.status}
-                  </Badge>
-                  <Badge variant="outline" className="text-xs">
-                    {lead.source}
-                  </Badge>
-                </div>
-
-                <div className="text-sm text-gray-600">
-                  <p><strong>Ciudad:</strong> {lead.city}</p>
-                  {lead.nextAction && (
-                    <p className="text-blue-600 mt-1">
-                      <strong>Próxima acción:</strong> {lead.nextAction}
-                    </p>
-                  )}
-                </div>
-
-                <div className="flex gap-2 pt-2">
-                  <Button size="sm" className="flex-1" onClick={() => handleViewLead(lead.id)}>
-                    Ver Perfil
-                  </Button>
-                  <Button size="sm" variant="outline">
-                    <Phone className="h-4 w-4" />
-                  </Button>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        ))}
-      </div>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      )}
 
       {filteredLeads.length === 0 && (
         <Card>

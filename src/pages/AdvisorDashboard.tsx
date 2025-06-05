@@ -23,10 +23,13 @@ import {
   ChevronDown,
   XCircle,
   Bookmark,
-  MessageSquare
+  MessageSquare,
+  LayoutGrid,
+  List
 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import LeadCard from '@/components/LeadCard';
+import LeadsListView from '@/components/LeadsListView';
 import { useVicidial } from '@/hooks/useVicidial';
 
 // Tipos de datos
@@ -60,6 +63,7 @@ const AdvisorDashboard = () => {
   const [sortBy, setSortBy] = useState('score');
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
   const [displayMode, setDisplayMode] = useState('assigned');
+  const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
   const [showFilters, setShowFilters] = useState(false);
   const { isVicidialConnected, startCall } = useVicidial();
 
@@ -545,11 +549,33 @@ const AdvisorDashboard = () => {
       <Card>
         <CardHeader className="flex flex-row items-center justify-between pb-2">
           <CardTitle>Mis Leads</CardTitle>
-          <Button variant="ghost" size="sm" onClick={() => setShowFilters(!showFilters)}>
-            <Filter className="h-4 w-4 mr-2" />
-            Filtros
-            <ChevronDown className={`h-4 w-4 ml-1 transform transition-transform ${showFilters ? 'rotate-180' : ''}`} />
-          </Button>
+          <div className="flex items-center gap-2">
+            {/* Selector de vista */}
+            <div className="flex items-center border rounded-lg p-1">
+              <Button
+                variant={viewMode === 'grid' ? 'default' : 'ghost'}
+                size="sm"
+                onClick={() => setViewMode('grid')}
+                className="h-8 w-8 p-0"
+              >
+                <LayoutGrid className="h-4 w-4" />
+              </Button>
+              <Button
+                variant={viewMode === 'list' ? 'default' : 'ghost'}
+                size="sm"
+                onClick={() => setViewMode('list')}
+                className="h-8 w-8 p-0"
+              >
+                <List className="h-4 w-4" />
+              </Button>
+            </div>
+            
+            <Button variant="ghost" size="sm" onClick={() => setShowFilters(!showFilters)}>
+              <Filter className="h-4 w-4 mr-2" />
+              Filtros
+              <ChevronDown className={`h-4 w-4 ml-1 transform transition-transform ${showFilters ? 'rotate-180' : ''}`} />
+            </Button>
+          </div>
         </CardHeader>
         <CardContent>
           <div className="space-y-4">
@@ -671,17 +697,25 @@ const AdvisorDashboard = () => {
         </CardContent>
       </Card>
 
-      {/* Lista de leads */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-        {filteredLeads.map((lead) => (
-          <LeadCardAdvanced 
-            key={lead.id} 
-            lead={lead} 
-            onView={handleViewLead}
-            onCall={handleCall}
-          />
-        ))}
-      </div>
+      {/* Lista de leads - Vista condicional */}
+      {viewMode === 'list' ? (
+        <LeadsListView 
+          leads={filteredLeads}
+          onCall={handleCall}
+          onView={handleViewLead}
+        />
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          {filteredLeads.map((lead) => (
+            <LeadCardAdvanced 
+              key={lead.id} 
+              lead={lead} 
+              onView={handleViewLead}
+              onCall={handleCall}
+            />
+          ))}
+        </div>
+      )}
 
       {filteredLeads.length === 0 && (
         <Card>
