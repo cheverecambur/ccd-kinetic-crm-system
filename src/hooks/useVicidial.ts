@@ -31,6 +31,9 @@ export interface CallSession {
   startTime?: Date;
   duration: number;
   status: 'idle' | 'ringing' | 'connected' | 'paused' | 'ended';
+  isPaused?: boolean;
+  leadName?: string;
+  phoneNumber?: string;
 }
 
 export interface AgentMetrics {
@@ -39,6 +42,7 @@ export interface AgentMetrics {
   leadsContacted: number;
   conversions: number;
   avgCallDuration: number;
+  averageCallTime?: string;
 }
 
 export const useVicidial = () => {
@@ -50,14 +54,16 @@ export const useVicidial = () => {
   const [callSession, setCallSession] = useState<CallSession>({
     isActive: false,
     duration: 0,
-    status: 'idle'
+    status: 'idle',
+    isPaused: false
   });
   const [agentMetrics, setAgentMetrics] = useState<AgentMetrics>({
     callsToday: 0,
     talkTime: 0,
     leadsContacted: 0,
     conversions: 0,
-    avgCallDuration: 0
+    avgCallDuration: 0,
+    averageCallTime: '0:00'
   });
   const [isStartingCall, setIsStartingCall] = useState(false);
   const [isEndingCall, setIsEndingCall] = useState(false);
@@ -199,7 +205,10 @@ export const useVicidial = () => {
         isActive: true,
         startTime: new Date(),
         duration: 0,
-        status: 'ringing'
+        status: 'ringing',
+        isPaused: false,
+        leadName: callData.leadName,
+        phoneNumber: callData.phoneNumber
       });
       
       // Simular conexión de llamada
@@ -240,7 +249,8 @@ export const useVicidial = () => {
         setCallSession({
           isActive: false,
           duration: 0,
-          status: 'idle'
+          status: 'idle',
+          isPaused: false
         });
         setIsEndingCall(false);
       }, 1000);
@@ -254,13 +264,14 @@ export const useVicidial = () => {
     }
   };
 
-  const pauseCall = async () => {
+  const pauseCall = async (shouldPause?: boolean) => {
     try {
       setIsPausingCall(true);
       
       setCallSession(prev => ({
         ...prev,
-        status: prev.status === 'paused' ? 'connected' : 'paused'
+        status: prev.status === 'paused' ? 'connected' : 'paused',
+        isPaused: prev.status !== 'paused'
       }));
       
       setTimeout(() => {
@@ -276,7 +287,7 @@ export const useVicidial = () => {
     }
   };
 
-  const setDisposition = async (disposition: string) => {
+  const setDisposition = async (disposition: string | object) => {
     try {
       console.log('Setting disposition:', disposition);
       return true;
@@ -295,6 +306,21 @@ export const useVicidial = () => {
   useEffect(() => {
     fetchLeads();
   }, []);
+
+  useEffect(() => {
+    let interval: NodeJS.Timeout;
+    if (callSession.isActive && callSession.status === 'connected') {
+      interval = setInterval(() => {
+        setCallSession(prev => ({
+          ...prev,
+          duration: prev.duration + 1
+        }));
+      }, 1000);
+    }
+    return () => {
+      if (interval) clearInterval(interval);
+    };
+  }, [callSession.isActive, callSession.status]);
 
   return {
     leads,
