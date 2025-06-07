@@ -1,4 +1,4 @@
-import { supabase } from '@/lib/supabaseClient';
+import { supabase } from '@/integrations/supabase/client';
 
 const VICIDIAL_URL = process.env.NEXT_PUBLIC_VICIDIAL_URL;
 

@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -28,7 +29,7 @@ const LeadsManagement = () => {
   const [filterSource, setFilterSource] = useState('all');
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
 
-  // Datos de ejemplo para leads
+  // Datos de ejemplo para leads con todos los campos requeridos
   const leads = [
     {
       id: '1',
@@ -39,8 +40,13 @@ const LeadsManagement = () => {
       status: 'qualified',
       score: 85,
       source: 'Facebook',
+      course: 'Excel Avanzado',
       lastContact: '2024-01-26T14:20:00Z',
-      nextAction: 'Enviar propuesta de Excel Avanzado'
+      nextAction: 'Enviar propuesta de Excel Avanzado',
+      attemptCount: 3,
+      disposition: 'MUY_INTERESADO',
+      callbackDate: '2024-01-27',
+      callbackTime: '14:00'
     },
     {
       id: '2',
@@ -51,8 +57,11 @@ const LeadsManagement = () => {
       status: 'new',
       score: 92,
       source: 'Google',
+      course: 'Contabilidad Básica',
       lastContact: '2024-01-25T10:15:00Z',
-      nextAction: 'Primera llamada de contacto'
+      nextAction: 'Primera llamada de contacto',
+      attemptCount: 1,
+      disposition: 'NO_CONTESTA'
     },
     {
       id: '3',
@@ -63,8 +72,11 @@ const LeadsManagement = () => {
       status: 'contacted',
       score: 78,
       source: 'TikTok',
+      course: 'Marketing Digital',
       lastContact: '2024-01-24T16:30:00Z',
-      nextAction: 'Follow-up llamada'
+      nextAction: 'Follow-up llamada',
+      attemptCount: 2,
+      disposition: 'CLTE_POTENCIAL'
     },
     {
       id: '4',
@@ -75,8 +87,13 @@ const LeadsManagement = () => {
       status: 'proposal',
       score: 95,
       source: 'Referido',
+      course: 'Administración',
       lastContact: '2024-01-23T09:45:00Z',
-      nextAction: 'Seguimiento propuesta enviada'
+      nextAction: 'Seguimiento propuesta enviada',
+      attemptCount: 4,
+      disposition: 'VOLVER_LLAMAR',
+      callbackDate: '2024-01-28',
+      callbackTime: '10:00'
     },
     {
       id: '5',
@@ -87,8 +104,11 @@ const LeadsManagement = () => {
       status: 'qualified',
       score: 88,
       source: 'Instagram',
+      course: 'Recursos Humanos',
       lastContact: '2024-01-22T11:20:00Z',
-      nextAction: 'Agendar demo personalizada'
+      nextAction: 'Agendar demo personalizada',
+      attemptCount: 2,
+      disposition: 'MUY_INTERESADO'
     },
     {
       id: '6',
@@ -98,7 +118,10 @@ const LeadsManagement = () => {
       status: 'new',
       score: 72,
       source: 'Facebook',
-      nextAction: 'Primera llamada de contacto'
+      course: 'Office Básico',
+      nextAction: 'Primera llamada de contacto',
+      attemptCount: 0,
+      disposition: 'NO_CONTESTA'
     }
   ];
 
@@ -114,6 +137,12 @@ const LeadsManagement = () => {
 
   const handleViewLead = (leadId: string) => {
     navigate(`/leads/${leadId}`);
+  };
+
+  const handleCall = (phone: string, name: string, id: string) => {
+    console.log('Iniciando llamada:', { phone, name, id });
+    // Aquí iría la integración con Vicidial
+    navigate('/call-center');
   };
 
   const leadStats = [
@@ -251,7 +280,7 @@ const LeadsManagement = () => {
       {viewMode === 'list' ? (
         <LeadsListView 
           leads={filteredLeads}
-          onCall={(phone, name, id) => console.log('Call:', phone, name, id)}
+          onCall={handleCall}
           onView={handleViewLead}
         />
       ) : (
@@ -283,6 +312,7 @@ const LeadsManagement = () => {
 
                   <div className="text-sm text-gray-600">
                     <p><strong>Ciudad:</strong> {lead.city}</p>
+                    <p><strong>Curso:</strong> {lead.course}</p>
                     {lead.nextAction && (
                       <p className="text-blue-600 mt-1">
                         <strong>Próxima acción:</strong> {lead.nextAction}
@@ -294,7 +324,7 @@ const LeadsManagement = () => {
                     <Button size="sm" className="flex-1" onClick={() => handleViewLead(lead.id)}>
                       Ver Perfil
                     </Button>
-                    <Button size="sm" variant="outline">
+                    <Button size="sm" variant="outline" onClick={() => handleCall(lead.phone, lead.name, lead.id)}>
                       <Phone className="h-4 w-4" />
                     </Button>
                   </div>
