@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -22,6 +21,10 @@ import ManualDialer from '@/components/ManualDialer';
 import CallControls from '@/components/CallControls';
 import DispositionModal, { DispositionData } from '@/components/DispositionModal';
 import VicidialDataExtractor from '@/components/VicidialDataExtractor';
+import NewLeadModal from '@/components/NewLeadModal';
+import CallbackModal from '@/components/CallbackModal';
+import SaleRegistrationModal from '@/components/SaleRegistrationModal';
+import AIAssistant from '@/components/AIAssistant';
 
 const CallCenter = () => {
   const { user } = useAuth();
@@ -41,6 +44,9 @@ const CallCenter = () => {
   } = useVicidial();
 
   const [showDispositionModal, setShowDispositionModal] = useState(false);
+  const [showNewLeadModal, setShowNewLeadModal] = useState(false);
+  const [showCallbackModal, setShowCallbackModal] = useState(false);
+  const [showSaleModal, setShowSaleModal] = useState(false);
   const [activeTab, setActiveTab] = useState('calls');
 
   // Datos para el próximo lead programado
@@ -174,249 +180,272 @@ const CallCenter = () => {
   };
 
   return (
-    <div className="p-6 space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold text-gray-900">Call Center</h1>
-          <p className="text-gray-600">Centro de llamadas integrado con Vicidial</p>
-        </div>
-        <div className="flex items-center gap-2">
-          <Badge className={isVicidialConnected ? "bg-green-500" : "bg-red-500"}>
-            {isVicidialConnected ? (
-              <>
-                <Wifi className="h-3 w-3 mr-1" />
-                Vicidial Conectado
-              </>
-            ) : (
-              <>
-                <WifiOff className="h-3 w-3 mr-1" />
-                Vicidial Desconectado
-              </>
-            )}
-          </Badge>
-          <Badge variant="outline">
-            Ext: {user?.extension || '101'}
-          </Badge>
-        </div>
-      </div>
-
-      {/* Extractor de datos de Vicidial */}
-      <VicidialDataExtractor />
-
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Panel principal de llamadas */}
-        <div className="lg:col-span-2 space-y-6">
-          {/* Métricas del agente en tiempo real */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <BarChart3 className="h-5 w-5" />
-                Métricas de Hoy - Vicidial
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                <div className="text-center">
-                  <div className="text-2xl font-bold text-blue-600">{agentMetrics?.callsToday || 0}</div>
-                  <div className="text-sm text-gray-600">Llamadas</div>
-                </div>
-                <div className="text-center">
-                  <div className="text-2xl font-bold text-green-600">{agentMetrics?.conversions || 0}</div>
-                  <div className="text-sm text-gray-600">Conversiones</div>
-                </div>
-                <div className="text-center">
-                  <div className="text-2xl font-bold text-purple-600">{agentMetrics?.averageCallTime || '0:00'}</div>
-                  <div className="text-sm text-gray-600">Tiempo Promedio</div>
-                </div>
-                <div className="text-center">
-                  <div className="text-2xl font-bold text-orange-600">
-                    {agentMetrics ? Math.floor(agentMetrics.talkTime / 60) : 0}m
-                  </div>
-                  <div className="text-sm text-gray-600">Tiempo de Conversación</div>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Controles de llamada */}
-          <CallControls
-            callSession={callSession}
-            onHangup={handleEndCall}
-            onPause={handlePauseCall}
-            onMute={handleMute}
-            onHold={handleHold}
-            formatCallDuration={formatCallDuration}
-            isEndingCall={isEndingCall}
-            isPausingCall={isPausingCall}
-          />
-
-          {/* Tabs para diferentes funcionalidades */}
-          <Card>
-            <CardContent className="p-0">
-              <Tabs value={activeTab} onValueChange={setActiveTab}>
-                <TabsList className="grid w-full grid-cols-3">
-                  <TabsTrigger value="calls">Llamadas</TabsTrigger>
-                  <TabsTrigger value="manual">Manual</TabsTrigger>
-                  <TabsTrigger value="history">Historial</TabsTrigger>
-                </TabsList>
-                
-                <TabsContent value="calls" className="p-6">
-                  {/* Próxima llamada programada */}
-                  {!callSession.isActive && (
-                    <div className="text-center space-y-4">
-                      <div className="w-24 h-24 bg-blue-100 rounded-full flex items-center justify-center mx-auto">
-                        <Phone className="h-12 w-12 text-blue-600" />
-                      </div>
-                      <div>
-                        <h3 className="text-lg font-semibold">Próximo Lead Programado</h3>
-                        <p className="text-gray-600">{nextScheduledLead.name}</p>
-                        <p className="text-sm text-gray-500">{nextScheduledLead.phone}</p>
-                        <p className="text-xs text-blue-600">Callback: Hoy {nextScheduledLead.callbackTime}</p>
-                        <Badge className="mt-2 bg-orange-500">{nextScheduledLead.score}% Score</Badge>
-                      </div>
-                      <Button 
-                        onClick={handleStartScheduledCall} 
-                        size="lg" 
-                        className="bg-green-600 hover:bg-green-700"
-                        disabled={isStartingCall || !isVicidialConnected}
-                      >
-                        {isStartingCall ? (
-                          <div className="flex items-center">
-                            <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-2"></div>
-                            Conectando...
-                          </div>
-                        ) : (
-                          <>
-                            <Phone className="h-5 w-5 mr-2" />
-                            Llamar Lead Programado
-                          </>
-                        )}
-                      </Button>
-                    </div>
-                  )}
-                </TabsContent>
-                
-                <TabsContent value="manual" className="p-6">
-                  <ManualDialer onCall={handleStartManualCall} />
-                </TabsContent>
-                
-                <TabsContent value="history" className="p-6">
-                  <div className="space-y-3">
-                    <h3 className="font-semibold">Llamadas de Hoy</h3>
-                    {callHistory.map((call) => (
-                      <div key={call.id} className="flex items-center justify-between p-3 border rounded-lg">
-                        <div className="flex items-center gap-3">
-                          <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
-                            <User className="h-5 w-5 text-blue-600" />
-                          </div>
-                          <div>
-                            <p className="font-medium">{call.name}</p>
-                            <p className="text-sm text-gray-600">{call.phone}</p>
-                            <p className="text-xs text-gray-500">{call.notes}</p>
-                          </div>
-                        </div>
-                        <div className="text-right">
-                          <p className="text-sm font-medium">{call.time}</p>
-                          <p className="text-xs text-gray-500">{call.duration}</p>
-                          <Badge className={getDispositionColor(call.disposition)} variant="secondary">
-                            {call.disposition}
-                          </Badge>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </TabsContent>
-              </Tabs>
-            </CardContent>
-          </Card>
-        </div>
-
-        {/* Panel lateral - Información del lead */}
-        <div className="space-y-6">
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <User className="h-5 w-5" />
-                Información del Lead
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-3">
-              {callSession.isActive || activeTab === 'calls' ? (
+    <>
+      <div className="p-6 space-y-6">
+        {/* Header */}
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-3xl font-bold text-gray-900">Call Center</h1>
+            <p className="text-gray-600">Centro de llamadas integrado con Vicidial</p>
+          </div>
+          <div className="flex items-center gap-2">
+            <Badge className={isVicidialConnected ? "bg-green-500" : "bg-red-500"}>
+              {isVicidialConnected ? (
                 <>
-                  <div>
-                    <label className="text-sm font-medium text-gray-600">Nombre</label>
-                    <p className="font-medium">{callSession.leadName || nextScheduledLead.name}</p>
-                  </div>
-                  <div>
-                    <label className="text-sm font-medium text-gray-600">Teléfono</label>
-                    <p>{callSession.phoneNumber || nextScheduledLead.phone}</p>
-                  </div>
-                  <div>
-                    <label className="text-sm font-medium text-gray-600">Ciudad</label>
-                    <p>{nextScheduledLead.city}</p>
-                  </div>
-                  <div>
-                    <label className="text-sm font-medium text-gray-600">Curso de Interés</label>
-                    <p>{nextScheduledLead.course}</p>
-                  </div>
-                  <div>
-                    <label className="text-sm font-medium text-gray-600">Score</label>
-                    <Badge className="bg-orange-500">{nextScheduledLead.score}%</Badge>
-                  </div>
-                  <div>
-                    <label className="text-sm font-medium text-gray-600">Fuente</label>
-                    <p>{nextScheduledLead.source}</p>
-                  </div>
-                  <div>
-                    <label className="text-sm font-medium text-gray-600">Notas Previas</label>
-                    <p className="text-sm text-gray-600">{nextScheduledLead.notes}</p>
-                  </div>
+                  <Wifi className="h-3 w-3 mr-1" />
+                  Vicidial Conectado
                 </>
               ) : (
-                <p className="text-gray-500 text-center py-8">
-                  Selecciona la pestaña "Llamadas" o inicia una llamada para ver la información del lead
-                </p>
+                <>
+                  <WifiOff className="h-3 w-3 mr-1" />
+                  Vicidial Desconectado
+                </>
               )}
-            </CardContent>
-          </Card>
-
-          {/* Acciones rápidas */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Acciones Rápidas</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-2">
-              <Button 
-                variant="outline" 
-                className="w-full justify-start"
-                onClick={() => sendWhatsApp(nextScheduledLead.phone, nextScheduledLead.name)}
-              >
-                <MessageSquare className="h-4 w-4 mr-2" />
-                Enviar WhatsApp
-              </Button>
-              <Button variant="outline" className="w-full justify-start">
-                <Clock className="h-4 w-4 mr-2" />
-                Programar Callback
-              </Button>
-              <Button variant="outline" className="w-full justify-start">
-                <Settings className="h-4 w-4 mr-2" />
-                Configuración
-              </Button>
-            </CardContent>
-          </Card>
+            </Badge>
+            <Badge variant="outline">
+              Ext: {user?.extension || '101'}
+            </Badge>
+          </div>
         </div>
-      </div>
 
-      {/* Modal para registrar resultado de llamada */}
-      <DispositionModal
-        isOpen={showDispositionModal}
-        onClose={() => setShowDispositionModal(false)}
-        onSave={handleSaveDisposition}
-        leadName={callSession.leadName}
-        phoneNumber={callSession.phoneNumber}
-      />
-    </div>
+        {/* Extractor de datos de Vicidial */}
+        <VicidialDataExtractor />
+
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          {/* Panel principal de llamadas */}
+          <div className="lg:col-span-2 space-y-6">
+            {/* Métricas del agente en tiempo real */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <BarChart3 className="h-5 w-5" />
+                  Métricas de Hoy - Vicidial
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                  <div className="text-center">
+                    <div className="text-2xl font-bold text-blue-600">{agentMetrics?.callsToday || 0}</div>
+                    <div className="text-sm text-gray-600">Llamadas</div>
+                  </div>
+                  <div className="text-center">
+                    <div className="text-2xl font-bold text-green-600">{agentMetrics?.conversions || 0}</div>
+                    <div className="text-sm text-gray-600">Conversiones</div>
+                  </div>
+                  <div className="text-center">
+                    <div className="text-2xl font-bold text-purple-600">{agentMetrics?.averageCallTime || '0:00'}</div>
+                    <div className="text-sm text-gray-600">Tiempo Promedio</div>
+                  </div>
+                  <div className="text-center">
+                    <div className="text-2xl font-bold text-orange-600">
+                      {agentMetrics ? Math.floor(agentMetrics.talkTime / 60) : 0}m
+                    </div>
+                    <div className="text-sm text-gray-600">Tiempo de Conversación</div>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Controles de llamada */}
+            <CallControls
+              callSession={callSession}
+              onHangup={handleEndCall}
+              onPause={handlePauseCall}
+              onMute={handleMute}
+              onHold={handleHold}
+              formatCallDuration={formatCallDuration}
+              isEndingCall={isEndingCall}
+              isPausingCall={isPausingCall}
+            />
+
+            {/* Tabs para diferentes funcionalidades */}
+            <Card>
+              <CardContent className="p-0">
+                <Tabs value={activeTab} onValueChange={setActiveTab}>
+                  <TabsList className="grid w-full grid-cols-3">
+                    <TabsTrigger value="calls">Llamadas</TabsTrigger>
+                    <TabsTrigger value="manual">Manual</TabsTrigger>
+                    <TabsTrigger value="history">Historial</TabsTrigger>
+                  </TabsList>
+                  
+                  <TabsContent value="calls" className="p-6">
+                    {/* Próxima llamada programada */}
+                    {!callSession.isActive && (
+                      <div className="text-center space-y-4">
+                        <div className="w-24 h-24 bg-blue-100 rounded-full flex items-center justify-center mx-auto">
+                          <Phone className="h-12 w-12 text-blue-600" />
+                        </div>
+                        <div>
+                          <h3 className="text-lg font-semibold">Próximo Lead Programado</h3>
+                          <p className="text-gray-600">{nextScheduledLead.name}</p>
+                          <p className="text-sm text-gray-500">{nextScheduledLead.phone}</p>
+                          <p className="text-xs text-blue-600">Callback: Hoy {nextScheduledLead.callbackTime}</p>
+                          <Badge className="mt-2 bg-orange-500">{nextScheduledLead.score}% Score</Badge>
+                        </div>
+                        <Button 
+                          onClick={handleStartScheduledCall} 
+                          size="lg" 
+                          className="bg-green-600 hover:bg-green-700"
+                          disabled={isStartingCall || !isVicidialConnected}
+                        >
+                          {isStartingCall ? (
+                            <div className="flex items-center">
+                              <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-2"></div>
+                              Conectando...
+                            </div>
+                          ) : (
+                            <>
+                              <Phone className="h-5 w-5 mr-2" />
+                              Llamar Lead Programado
+                            </>
+                          )}
+                        </Button>
+                      </div>
+                    )}
+                  </TabsContent>
+                  
+                  <TabsContent value="manual" className="p-6">
+                    <ManualDialer onCall={handleStartManualCall} />
+                  </TabsContent>
+                  
+                  <TabsContent value="history" className="p-6">
+                    <div className="space-y-3">
+                      <h3 className="font-semibold">Llamadas de Hoy</h3>
+                      {callHistory.map((call) => (
+                        <div key={call.id} className="flex items-center justify-between p-3 border rounded-lg">
+                          <div className="flex items-center gap-3">
+                            <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
+                              <User className="h-5 w-5 text-blue-600" />
+                            </div>
+                            <div>
+                              <p className="font-medium">{call.name}</p>
+                              <p className="text-sm text-gray-600">{call.phone}</p>
+                              <p className="text-xs text-gray-500">{call.notes}</p>
+                            </div>
+                          </div>
+                          <div className="text-right">
+                            <p className="text-sm font-medium">{call.time}</p>
+                            <p className="text-xs text-gray-500">{call.duration}</p>
+                            <Badge className={getDispositionColor(call.disposition)} variant="secondary">
+                              {call.disposition}
+                            </Badge>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </TabsContent>
+                </Tabs>
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* Panel lateral - Información del lead */}
+          <div className="space-y-6">
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <User className="h-5 w-5" />
+                  Información del Lead
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                {callSession.isActive || activeTab === 'calls' ? (
+                  <>
+                    <div>
+                      <label className="text-sm font-medium text-gray-600">Nombre</label>
+                      <p className="font-medium">{callSession.leadName || nextScheduledLead.name}</p>
+                    </div>
+                    <div>
+                      <label className="text-sm font-medium text-gray-600">Teléfono</label>
+                      <p>{callSession.phoneNumber || nextScheduledLead.phone}</p>
+                    </div>
+                    <div>
+                      <label className="text-sm font-medium text-gray-600">Ciudad</label>
+                      <p>{nextScheduledLead.city}</p>
+                    </div>
+                    <div>
+                      <label className="text-sm font-medium text-gray-600">Curso de Interés</label>
+                      <p>{nextScheduledLead.course}</p>
+                    </div>
+                    <div>
+                      <label className="text-sm font-medium text-gray-600">Score</label>
+                      <Badge className="bg-orange-500">{nextScheduledLead.score}%</Badge>
+                    </div>
+                    <div>
+                      <label className="text-sm font-medium text-gray-600">Fuente</label>
+                      <p>{nextScheduledLead.source}</p>
+                    </div>
+                    <div>
+                      <label className="text-sm font-medium text-gray-600">Notas Previas</label>
+                      <p className="text-sm text-gray-600">{nextScheduledLead.notes}</p>
+                    </div>
+                  </>
+                ) : (
+                  <p className="text-gray-500 text-center py-8">
+                    Selecciona la pestaña "Llamadas" o inicia una llamada para ver la información del lead
+                  </p>
+                )}
+              </CardContent>
+            </Card>
+
+            {/* Acciones rápidas */}
+            <Card>
+              <CardHeader>
+                <CardTitle>Acciones Rápidas</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-2">
+                <Button 
+                  variant="outline" 
+                  className="w-full justify-start"
+                  onClick={() => sendWhatsApp(nextScheduledLead.phone, nextScheduledLead.name)}
+                >
+                  <MessageSquare className="h-4 w-4 mr-2" />
+                  Enviar WhatsApp
+                </Button>
+                <Button variant="outline" className="w-full justify-start">
+                  <Clock className="h-4 w-4 mr-2" />
+                  Programar Callback
+                </Button>
+                <Button variant="outline" className="w-full justify-start">
+                  <Settings className="h-4 w-4 mr-2" />
+                  Configuración
+                </Button>
+              </CardContent>
+            </Card>
+          </div>
+        </div>
+
+        {/* Modales existentes */}
+        <DispositionModal
+          isOpen={showDispositionModal}
+          onClose={() => setShowDispositionModal(false)}
+          onSave={handleSaveDisposition}
+          leadName={callSession.leadName}
+          phoneNumber={callSession.phoneNumber}
+        />
+
+        <NewLeadModal
+          isOpen={showNewLeadModal}
+          onClose={() => setShowNewLeadModal(false)}
+        />
+
+        <CallbackModal
+          isOpen={showCallbackModal}
+          onClose={() => setShowCallbackModal(false)}
+        />
+
+        <SaleRegistrationModal
+          isOpen={showSaleModal}
+          onClose={() => setShowSaleModal(false)}
+        />
+
+        {/* IA Assistant especializada para Call Center */}
+        <AIAssistant 
+          context="Call Center - Gestión de llamadas y leads"
+          initialMinimized={true}
+        />
+      </div>
+    </>
   );
 };
 

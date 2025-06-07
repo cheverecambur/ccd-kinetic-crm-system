@@ -16,6 +16,7 @@ import {
   MessageSquare
 } from 'lucide-react';
 import QuickActions from '@/components/QuickActions';
+import AIAssistant from '@/components/AIAssistant';
 
 const AgentDashboard = () => {
   const { user } = useAuth();
@@ -150,6 +151,12 @@ const AgentDashboard = () => {
 
       {/* Componente de acciones rápidas flotantes */}
       <QuickActions />
+
+      {/* IA Assistant especializada para Asesores */}
+      <AIAssistant 
+        context="Dashboard del Asesor - Ventas y gestión de leads"
+        initialMinimized={true}
+      />
     </>
   );
 };
