@@ -157,10 +157,32 @@ const CallCenter = () => {
     });
   };
 
+  // New callback handlers for modals
+  const handleLeadCreated = () => {
+    toast({
+      title: "Lead creado",
+      description: "El nuevo lead ha sido agregado exitosamente",
+    });
+  };
+
+  const handleCallbackScheduled = () => {
+    toast({
+      title: "Callback programado",
+      description: "El callback ha sido programado exitosamente",
+    });
+  };
+
+  const handleSaleRegistered = () => {
+    toast({
+      title: "Venta registrada",
+      description: "La venta ha sido registrada exitosamente",
+    });
+  };
+
   // Función para enviar WhatsApp
   const sendWhatsApp = (phone: string, name: string) => {
     const cleanPhone = phone.replace(/\D/g, '');
-    const userName = user?.email?.split('@')[0] || 'un asesor';
+    const userName = user?.user_metadata?.name || user?.email?.split('@')[0] || 'un asesor';
     const message = encodeURIComponent(`Hola ${name}, soy ${userName} de CCD Capacitación. ¿Tienes unos minutos para conversar sobre nuestros cursos?`);
     const whatsappUrl = `https://wa.me/${cleanPhone}?text=${message}`;
     window.open(whatsappUrl, '_blank');
@@ -402,7 +424,11 @@ const CallCenter = () => {
                   <MessageSquare className="h-4 w-4 mr-2" />
                   Enviar WhatsApp
                 </Button>
-                <Button variant="outline" className="w-full justify-start">
+                <Button 
+                  variant="outline" 
+                  className="w-full justify-start"
+                  onClick={() => setShowCallbackModal(true)}
+                >
                   <Clock className="h-4 w-4 mr-2" />
                   Programar Callback
                 </Button>
@@ -415,7 +441,7 @@ const CallCenter = () => {
           </div>
         </div>
 
-        {/* Modales existentes */}
+        {/* Modales con todos los props requeridos */}
         <DispositionModal
           isOpen={showDispositionModal}
           onClose={() => setShowDispositionModal(false)}
@@ -427,16 +453,25 @@ const CallCenter = () => {
         <NewLeadModal
           isOpen={showNewLeadModal}
           onClose={() => setShowNewLeadModal(false)}
+          onLeadCreated={handleLeadCreated}
         />
 
         <CallbackModal
           isOpen={showCallbackModal}
           onClose={() => setShowCallbackModal(false)}
+          leadId={nextScheduledLead.id}
+          leadName={nextScheduledLead.name}
+          phoneNumber={nextScheduledLead.phone}
+          onCallbackScheduled={handleCallbackScheduled}
         />
 
         <SaleRegistrationModal
           isOpen={showSaleModal}
           onClose={() => setShowSaleModal(false)}
+          leadId={nextScheduledLead.id}
+          leadName={nextScheduledLead.name}
+          phoneNumber={nextScheduledLead.phone}
+          onSaleRegistered={handleSaleRegistered}
         />
 
         {/* IA Assistant especializada para Call Center */}

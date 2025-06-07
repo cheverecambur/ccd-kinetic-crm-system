@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -23,6 +24,7 @@ import {
   Calendar
 } from 'lucide-react';
 
+// Interface for the component's Lead type (matching LeadsListView expectations)
 interface Lead {
   id: string;
   name: string;
@@ -32,6 +34,28 @@ interface Lead {
   source: string;
   assigned_to: string;
   created_at: string;
+  city: string;
+  score: number;
+  course: string;
+  attemptCount: number;
+}
+
+// Database Lead type (from Supabase)
+interface DatabaseLead {
+  id: number;
+  first_name: string | null;
+  last_name: string | null;
+  phone_number: string;
+  email: string | null;
+  status: string | null;
+  source_id: string | null;
+  user_id: string | null;
+  created_at: string;
+  city: string | null;
+  interest_course: string | null;
+  lead_score: number | null;
+  called_count: number | null;
+  [key: string]: any;
 }
 
 const LeadsManagement = () => {
@@ -45,6 +69,25 @@ const LeadsManagement = () => {
   const [activeTab, setActiveTab] = useState('list');
   const [showNewLeadModal, setShowNewLeadModal] = useState(false);
 
+  // Function to map database lead to component lead interface
+  const mapDatabaseLeadToComponentLead = (dbLead: DatabaseLead): Lead => {
+    const fullName = [dbLead.first_name, dbLead.last_name].filter(Boolean).join(' ') || 'Sin nombre';
+    return {
+      id: dbLead.id.toString(),
+      name: fullName,
+      phone: dbLead.phone_number || '',
+      email: dbLead.email || '',
+      status: dbLead.status || 'NEW',
+      source: dbLead.source_id || 'Desconocido',
+      assigned_to: dbLead.user_id || '',
+      created_at: dbLead.created_at,
+      city: dbLead.city || 'No especificada',
+      score: dbLead.lead_score || 0,
+      course: dbLead.interest_course || 'No especificado',
+      attemptCount: dbLead.called_count || 0
+    };
+  };
+
   useEffect(() => {
     fetchLeads();
   }, []);
@@ -54,16 +97,20 @@ const LeadsManagement = () => {
     try {
       const { data, error } = await supabase
         .from('leads')
-        .select('*');
+        .select('*')
+        .order('created_at', { ascending: false });
 
       if (error) {
         throw error;
       }
 
       if (data) {
-        setLeads(data);
+        // Map database leads to component interface
+        const mappedLeads = data.map(mapDatabaseLeadToComponentLead);
+        setLeads(mappedLeads);
       }
     } catch (error: any) {
+      console.error('Error fetching leads:', error);
       toast({
         title: "Error",
         description: error.message,
@@ -103,6 +150,14 @@ const LeadsManagement = () => {
     setShowNewLeadModal(true);
   };
 
+  const handleLeadCreated = () => {
+    fetchLeads(); // Refresh the leads list
+    toast({
+      title: "Lead creado",
+      description: "El nuevo lead ha sido agregado exitosamente",
+    });
+  };
+
   return (
     <>
       <div className="p-6 space-y-6">
@@ -139,11 +194,12 @@ const LeadsManagement = () => {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="">Todos los estados</SelectItem>
-                  <SelectItem value="NUEVO">Nuevo</SelectItem>
-                  <SelectItem value="CONTACTADO">Contactado</SelectItem>
-                  <SelectItem value="EN_NEGOCIACION">En Negociación</SelectItem>
-                  <SelectItem value="CONVERTIDO">Convertido</SelectItem>
-                  <SelectItem value="DESCARTADO">Descartado</SelectItem>
+                  <SelectItem value="NEW">Nuevo</SelectItem>
+                  <SelectItem value="CONTACTED">Contactado</SelectItem>
+                  <SelectItem value="INTERESTED">Interesado</SelectItem>
+                  <SelectItem value="QUALIFIED">Calificado</SelectItem>
+                  <SelectItem value="CLOSED_WON">Venta Cerrada</SelectItem>
+                  <SelectItem value="CLOSED_LOST">Perdido</SelectItem>
                 </SelectContent>
               </Select>
               <Select onValueChange={handleSourceFilterChange}>
@@ -153,9 +209,11 @@ const LeadsManagement = () => {
                 <SelectContent>
                   <SelectItem value="">Todas las fuentes</SelectItem>
                   <SelectItem value="Facebook">Facebook</SelectItem>
-                  <SelectItem value="Google Ads">Google Ads</SelectItem>
-                  <SelectItem value="LinkedIn">LinkedIn</SelectItem>
+                  <SelectItem value="Google">Google</SelectItem>
+                  <SelectItem value="Instagram">Instagram</SelectItem>
+                  <SelectItem value="TikTok">TikTok</SelectItem>
                   <SelectItem value="Referido">Referido</SelectItem>
+                  <SelectItem value="WhatsApp">WhatsApp</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -194,6 +252,7 @@ const LeadsManagement = () => {
       <NewLeadModal
         isOpen={showNewLeadModal}
         onClose={() => setShowNewLeadModal(false)}
+        onLeadCreated={handleLeadCreated}
       />
 
       {/* IA Assistant especializada para Gestión de Leads */}
