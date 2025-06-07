@@ -1,32 +1,31 @@
+
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { 
   Phone, 
   PhoneCall, 
-  PhoneOff, 
-  Pause, 
-  Play, 
   Clock,
   User,
   MessageSquare,
-  Calendar,
-  Save,
-  RefreshCw,
   Wifi,
-  WifiOff
+  WifiOff,
+  Settings,
+  BarChart3
 } from 'lucide-react';
 import { useVicidial } from '@/hooks/useVicidial';
 import { useAuth } from '@/contexts/AuthContext';
+import { useToast } from '@/hooks/use-toast';
+import ManualDialer from '@/components/ManualDialer';
+import CallControls from '@/components/CallControls';
+import DispositionModal, { DispositionData } from '@/components/DispositionModal';
 import VicidialDataExtractor from '@/components/VicidialDataExtractor';
 
 const CallCenter = () => {
   const { user } = useAuth();
+  const { toast } = useToast();
   const {
     callSession,
     agentMetrics,
@@ -41,13 +40,11 @@ const CallCenter = () => {
     formatCallDuration
   } = useVicidial();
 
-  const [disposition, setDispositionValue] = useState('');
-  const [callNotes, setCallNotes] = useState('');
   const [showDispositionModal, setShowDispositionModal] = useState(false);
-  const [callbackDateTime, setCallbackDateTime] = useState('');
+  const [activeTab, setActiveTab] = useState('calls');
 
-  // Datos simulados para el próximo lead
-  const nextLead = {
+  // Datos para el próximo lead programado
+  const nextScheduledLead = {
     id: '1',
     name: 'María González',
     phone: '+57 301 234 5678',
@@ -57,19 +54,9 @@ const CallCenter = () => {
     source: 'Facebook',
     score: 85,
     lastContact: '2024-01-20',
+    callbackTime: '14:30',
     notes: 'Interesada en horarios flexibles, trabaja tiempo completo'
   };
-
-  const dispositions = [
-    { value: 'ANSWERED', label: 'Contestó - Interesado' },
-    { value: 'ANSWERED_NOT_INTERESTED', label: 'Contestó - No Interesado' },
-    { value: 'CALLBACK', label: 'Solicita Callback' },
-    { value: 'NO_ANSWER', label: 'No Contesta' },
-    { value: 'BUSY', label: 'Ocupado' },
-    { value: 'VOICEMAIL', label: 'Buzón de Voz' },
-    { value: 'WRONG_NUMBER', label: 'Número Equivocado' },
-    { value: 'DO_NOT_CALL', label: 'No Volver a Llamar' }
-  ];
 
   const callHistory = [
     {
@@ -78,8 +65,8 @@ const CallCenter = () => {
       phone: '+57 300 876 5432',
       time: '14:30',
       duration: '8:45',
-      disposition: 'ANSWERED',
-      notes: 'Muy interesado en curso de Excel'
+      disposition: 'SALE',
+      notes: 'Venta realizada - Excel Avanzado'
     },
     {
       id: 2,
@@ -89,16 +76,37 @@ const CallCenter = () => {
       duration: '3:20',
       disposition: 'CALLBACK',
       notes: 'Llamar después de las 6pm'
+    },
+    {
+      id: 3,
+      name: 'Luis Martínez',
+      phone: '+57 312 987 6543',
+      time: '12:45',
+      duration: '2:15',
+      disposition: 'NOT_INTERESTED',
+      notes: 'No está interesado en este momento'
     }
   ];
 
-  // Manejar inicio de llamada
-  const handleStartCall = () => {
+  // Manejar inicio de llamada manual
+  const handleStartManualCall = (phoneNumber: string, leadName?: string, leadId?: string) => {
+    const cleanPhoneNumber = phoneNumber.replace(/\D/g, '');
+    
     startCall({
-      phoneNumber: nextLead.phone.replace(/\D/g, ''),
+      phoneNumber: cleanPhoneNumber,
       phoneCode: '57',
-      leadId: nextLead.id,
-      leadName: nextLead.name
+      leadId: leadId || `manual_${Date.now()}`,
+      leadName: leadName || 'Llamada Manual'
+    });
+  };
+
+  // Manejar inicio de llamada programada
+  const handleStartScheduledCall = () => {
+    startCall({
+      phoneNumber: nextScheduledLead.phone.replace(/\D/g, ''),
+      phoneCode: '57',
+      leadId: nextScheduledLead.id,
+      leadName: nextScheduledLead.name
     });
   };
 
@@ -113,34 +121,55 @@ const CallCenter = () => {
     pauseCall(!callSession.isPaused);
   };
 
+  // Handlers para controles adicionales
+  const handleMute = () => {
+    console.log('Muting call');
+    toast({
+      title: "Micrófono",
+      description: "Estado del micrófono cambiado",
+    });
+  };
+
+  const handleHold = () => {
+    console.log('Putting call on hold');
+    toast({
+      title: "Llamada en espera",
+      description: "Llamada puesta en espera",
+    });
+  };
+
   // Guardar resultado de llamada
-  const handleSaveDisposition = () => {
-    if (!disposition || !user?.username) {
-      return;
-    }
-
-    const dispositionData = {
-      agent_user: user.username,
-      value: disposition,
-      callback_datetime: disposition === 'CALLBACK' ? callbackDateTime : undefined,
-      callback_type: 'ANYONE' as const,
-      callback_comments: callNotes
-    };
-
-    setDisposition(dispositionData);
+  const handleSaveDisposition = (dispositionData: DispositionData) => {
+    console.log('Saving disposition:', dispositionData);
     
+    setDisposition(dispositionData);
     setShowDispositionModal(false);
-    setDispositionValue('');
-    setCallNotes('');
-    setCallbackDateTime('');
+    
+    toast({
+      title: "Disposición guardada",
+      description: `Resultado: ${dispositionData.disposition}`,
+    });
   };
 
   // Función para enviar WhatsApp
   const sendWhatsApp = (phone: string, name: string) => {
     const cleanPhone = phone.replace(/\D/g, '');
-    const message = encodeURIComponent(`Hola ${name}, soy ${user?.name} de CCD Capacitación. ¿Tienes unos minutos para conversar sobre nuestros cursos?`);
+    const message = encodeURIComponent(`Hola ${name}, soy ${user?.first_name || 'un asesor'} de CCD Capacitación. ¿Tienes unos minutos para conversar sobre nuestros cursos?`);
     const whatsappUrl = `https://wa.me/${cleanPhone}?text=${message}`;
     window.open(whatsappUrl, '_blank');
+  };
+
+  const getDispositionColor = (disposition: string) => {
+    switch (disposition) {
+      case 'SALE': return 'bg-green-500';
+      case 'INTERESTED': return 'bg-green-400';
+      case 'CALLBACK': return 'bg-blue-500';
+      case 'CALL_BACK_LATER': return 'bg-blue-400';
+      case 'NOT_INTERESTED': return 'bg-red-500';
+      case 'NO_ANSWER': return 'bg-yellow-500';
+      case 'BUSY': return 'bg-orange-500';
+      default: return 'bg-gray-500';
+    }
   };
 
   return (
@@ -177,102 +206,13 @@ const CallCenter = () => {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Panel principal de llamadas */}
         <div className="lg:col-span-2 space-y-6">
-          {/* Control de llamadas */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <PhoneCall className="h-5 w-5" />
-                Control de Llamadas - Vicidial
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              {!callSession.isActive ? (
-                <div className="text-center space-y-4">
-                  <div className="w-24 h-24 bg-blue-100 rounded-full flex items-center justify-center mx-auto">
-                    <Phone className="h-12 w-12 text-blue-600" />
-                  </div>
-                  <div>
-                    <h3 className="text-lg font-semibold">Próximo Lead</h3>
-                    <p className="text-gray-600">{nextLead.name}</p>
-                    <p className="text-sm text-gray-500">{nextLead.phone}</p>
-                    <Badge className="mt-2 bg-orange-500">{nextLead.score}% Score</Badge>
-                  </div>
-                  <Button 
-                    onClick={handleStartCall} 
-                    size="lg" 
-                    className="bg-green-600 hover:bg-green-700"
-                    disabled={isStartingCall || !isVicidialConnected}
-                  >
-                    {isStartingCall ? (
-                      <>
-                        <RefreshCw className="h-5 w-5 mr-2 animate-spin" />
-                        Conectando...
-                      </>
-                    ) : (
-                      <>
-                        <Phone className="h-5 w-5 mr-2" />
-                        Iniciar Llamada
-                      </>
-                    )}
-                  </Button>
-                  {!isVicidialConnected && (
-                    <p className="text-sm text-red-600">
-                      Vicidial no está conectado. Configurar variables de entorno.
-                    </p>
-                  )}
-                </div>
-              ) : (
-                <div className="text-center space-y-4">
-                  <div className="w-24 h-24 bg-green-100 rounded-full flex items-center justify-center mx-auto">
-                    {callSession.isPaused ? (
-                      <Pause className="h-12 w-12 text-orange-600" />
-                    ) : (
-                      <PhoneCall className="h-12 w-12 text-green-600 animate-pulse" />
-                    )}
-                  </div>
-                  <div>
-                    <h3 className="text-lg font-semibold">En llamada con</h3>
-                    <p className="text-gray-600">{callSession.leadName}</p>
-                    <p className="text-sm text-gray-500">{callSession.phoneNumber}</p>
-                    <div className="flex items-center justify-center gap-2 mt-2">
-                      <Clock className="h-4 w-4 text-gray-500" />
-                      <span className="font-mono text-lg">{formatCallDuration(callSession.duration)}</span>
-                    </div>
-                    {callSession.isPaused && (
-                      <Badge className="mt-2 bg-orange-500">En Pausa</Badge>
-                    )}
-                  </div>
-                  <div className="flex gap-3 justify-center">
-                    <Button 
-                      onClick={handlePauseCall} 
-                      variant="outline"
-                      className={callSession.isPaused ? 'bg-orange-100' : ''}
-                      disabled={isPausingCall}
-                    >
-                      {callSession.isPaused ? <Play className="h-4 w-4" /> : <Pause className="h-4 w-4" />}
-                    </Button>
-                    <Button 
-                      onClick={handleEndCall} 
-                      variant="destructive"
-                      disabled={isEndingCall}
-                    >
-                      {isEndingCall ? (
-                        <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
-                      ) : (
-                        <PhoneOff className="h-4 w-4 mr-2" />
-                      )}
-                      Finalizar
-                    </Button>
-                  </div>
-                </div>
-              )}
-            </CardContent>
-          </Card>
-
           {/* Métricas del agente en tiempo real */}
           <Card>
             <CardHeader>
-              <CardTitle>Métricas de Hoy - Vicidial</CardTitle>
+              <CardTitle className="flex items-center gap-2">
+                <BarChart3 className="h-5 w-5" />
+                Métricas de Hoy - Vicidial
+              </CardTitle>
             </CardHeader>
             <CardContent>
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
@@ -298,38 +238,95 @@ const CallCenter = () => {
             </CardContent>
           </Card>
 
-          {/* Historial de llamadas del día */}
+          {/* Controles de llamada */}
+          <CallControls
+            callSession={callSession}
+            onHangup={handleEndCall}
+            onPause={handlePauseCall}
+            onMute={handleMute}
+            onHold={handleHold}
+            formatCallDuration={formatCallDuration}
+            isEndingCall={isEndingCall}
+            isPausingCall={isPausingCall}
+          />
+
+          {/* Tabs para diferentes funcionalidades */}
           <Card>
-            <CardHeader>
-              <CardTitle>Llamadas de Hoy</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-3">
-                {callHistory.map((call) => (
-                  <div key={call.id} className="flex items-center justify-between p-3 border rounded-lg">
-                    <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
-                        <User className="h-5 w-5 text-blue-600" />
+            <CardContent className="p-0">
+              <Tabs value={activeTab} onValueChange={setActiveTab}>
+                <TabsList className="grid w-full grid-cols-3">
+                  <TabsTrigger value="calls">Llamadas</TabsTrigger>
+                  <TabsTrigger value="manual">Manual</TabsTrigger>
+                  <TabsTrigger value="history">Historial</TabsTrigger>
+                </TabsList>
+                
+                <TabsContent value="calls" className="p-6">
+                  {/* Próxima llamada programada */}
+                  {!callSession.isActive && (
+                    <div className="text-center space-y-4">
+                      <div className="w-24 h-24 bg-blue-100 rounded-full flex items-center justify-center mx-auto">
+                        <Phone className="h-12 w-12 text-blue-600" />
                       </div>
                       <div>
-                        <p className="font-medium">{call.name}</p>
-                        <p className="text-sm text-gray-600">{call.phone}</p>
+                        <h3 className="text-lg font-semibold">Próximo Lead Programado</h3>
+                        <p className="text-gray-600">{nextScheduledLead.name}</p>
+                        <p className="text-sm text-gray-500">{nextScheduledLead.phone}</p>
+                        <p className="text-xs text-blue-600">Callback: Hoy {nextScheduledLead.callbackTime}</p>
+                        <Badge className="mt-2 bg-orange-500">{nextScheduledLead.score}% Score</Badge>
                       </div>
+                      <Button 
+                        onClick={handleStartScheduledCall} 
+                        size="lg" 
+                        className="bg-green-600 hover:bg-green-700"
+                        disabled={isStartingCall || !isVicidialConnected}
+                      >
+                        {isStartingCall ? (
+                          <div className="flex items-center">
+                            <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-2"></div>
+                            Conectando...
+                          </div>
+                        ) : (
+                          <>
+                            <Phone className="h-5 w-5 mr-2" />
+                            Llamar Lead Programado
+                          </>
+                        )}
+                      </Button>
                     </div>
-                    <div className="text-right">
-                      <p className="text-sm font-medium">{call.time}</p>
-                      <p className="text-xs text-gray-500">{call.duration}</p>
-                    </div>
-                    <Badge className={
-                      call.disposition === 'ANSWERED' ? 'bg-green-500' :
-                      call.disposition === 'CALLBACK' ? 'bg-yellow-500' :
-                      'bg-gray-500'
-                    }>
-                      {call.disposition}
-                    </Badge>
+                  )}
+                </TabsContent>
+                
+                <TabsContent value="manual" className="p-6">
+                  <ManualDialer onCall={handleStartManualCall} />
+                </TabsContent>
+                
+                <TabsContent value="history" className="p-6">
+                  <div className="space-y-3">
+                    <h3 className="font-semibold">Llamadas de Hoy</h3>
+                    {callHistory.map((call) => (
+                      <div key={call.id} className="flex items-center justify-between p-3 border rounded-lg">
+                        <div className="flex items-center gap-3">
+                          <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
+                            <User className="h-5 w-5 text-blue-600" />
+                          </div>
+                          <div>
+                            <p className="font-medium">{call.name}</p>
+                            <p className="text-sm text-gray-600">{call.phone}</p>
+                            <p className="text-xs text-gray-500">{call.notes}</p>
+                          </div>
+                        </div>
+                        <div className="text-right">
+                          <p className="text-sm font-medium">{call.time}</p>
+                          <p className="text-xs text-gray-500">{call.duration}</p>
+                          <Badge className={getDispositionColor(call.disposition)} variant="secondary">
+                            {call.disposition}
+                          </Badge>
+                        </div>
+                      </div>
+                    ))}
                   </div>
-                ))}
-              </div>
+                </TabsContent>
+              </Tabs>
             </CardContent>
           </Card>
         </div>
@@ -344,36 +341,40 @@ const CallCenter = () => {
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-3">
-              {callSession.isActive ? (
+              {callSession.isActive || activeTab === 'calls' ? (
                 <>
                   <div>
                     <label className="text-sm font-medium text-gray-600">Nombre</label>
-                    <p className="font-medium">{nextLead.name}</p>
+                    <p className="font-medium">{callSession.leadName || nextScheduledLead.name}</p>
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium text-gray-600">Teléfono</label>
+                    <p>{callSession.phoneNumber || nextScheduledLead.phone}</p>
                   </div>
                   <div>
                     <label className="text-sm font-medium text-gray-600">Ciudad</label>
-                    <p>{nextLead.city}</p>
+                    <p>{nextScheduledLead.city}</p>
                   </div>
                   <div>
                     <label className="text-sm font-medium text-gray-600">Curso de Interés</label>
-                    <p>{nextLead.course}</p>
+                    <p>{nextScheduledLead.course}</p>
                   </div>
                   <div>
                     <label className="text-sm font-medium text-gray-600">Score</label>
-                    <Badge className="bg-orange-500">{nextLead.score}%</Badge>
+                    <Badge className="bg-orange-500">{nextScheduledLead.score}%</Badge>
                   </div>
                   <div>
                     <label className="text-sm font-medium text-gray-600">Fuente</label>
-                    <p>{nextLead.source}</p>
+                    <p>{nextScheduledLead.source}</p>
                   </div>
                   <div>
                     <label className="text-sm font-medium text-gray-600">Notas Previas</label>
-                    <p className="text-sm text-gray-600">{nextLead.notes}</p>
+                    <p className="text-sm text-gray-600">{nextScheduledLead.notes}</p>
                   </div>
                 </>
               ) : (
                 <p className="text-gray-500 text-center py-8">
-                  Inicia una llamada para ver la información del lead
+                  Selecciona la pestaña "Llamadas" o inicia una llamada para ver la información del lead
                 </p>
               )}
             </CardContent>
@@ -388,18 +389,18 @@ const CallCenter = () => {
               <Button 
                 variant="outline" 
                 className="w-full justify-start"
-                onClick={() => sendWhatsApp(nextLead.phone, nextLead.name)}
+                onClick={() => sendWhatsApp(nextScheduledLead.phone, nextScheduledLead.name)}
               >
                 <MessageSquare className="h-4 w-4 mr-2" />
                 Enviar WhatsApp
               </Button>
               <Button variant="outline" className="w-full justify-start">
-                <Calendar className="h-4 w-4 mr-2" />
+                <Clock className="h-4 w-4 mr-2" />
                 Programar Callback
               </Button>
               <Button variant="outline" className="w-full justify-start">
-                <RefreshCw className="h-4 w-4 mr-2" />
-                Marcar para Re-llamar
+                <Settings className="h-4 w-4 mr-2" />
+                Configuración
               </Button>
             </CardContent>
           </Card>
@@ -407,61 +408,13 @@ const CallCenter = () => {
       </div>
 
       {/* Modal para registrar resultado de llamada */}
-      <Dialog open={showDispositionModal} onOpenChange={setShowDispositionModal}>
-        <DialogContent className="max-w-md">
-          <DialogHeader>
-            <DialogTitle>Registrar Resultado de Llamada</DialogTitle>
-          </DialogHeader>
-          <div className="space-y-4">
-            <div>
-              <label className="block text-sm font-medium mb-2">Disposición de la Llamada</label>
-              <Select value={disposition} onValueChange={setDispositionValue}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Seleccionar resultado" />
-                </SelectTrigger>
-                <SelectContent>
-                  {dispositions.map((disp) => (
-                    <SelectItem key={disp.value} value={disp.value}>
-                      {disp.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium mb-2">Notas de la Llamada</label>
-              <Textarea
-                placeholder="Escribe notas importantes de la conversación..."
-                value={callNotes}
-                onChange={(e) => setCallNotes(e.target.value)}
-                rows={4}
-              />
-            </div>
-
-            {disposition === 'CALLBACK' && (
-              <div>
-                <label className="block text-sm font-medium mb-2">Fecha y Hora del Callback</label>
-                <Input 
-                  type="datetime-local" 
-                  value={callbackDateTime}
-                  onChange={(e) => setCallbackDateTime(e.target.value)}
-                />
-              </div>
-            )}
-
-            <div className="flex gap-2 pt-4">
-              <Button onClick={handleSaveDisposition} className="flex-1">
-                <Save className="h-4 w-4 mr-2" />
-                Guardar en Vicidial
-              </Button>
-              <Button variant="outline" onClick={() => setShowDispositionModal(false)}>
-                Cancelar
-              </Button>
-            </div>
-          </div>
-        </DialogContent>
-      </Dialog>
+      <DispositionModal
+        isOpen={showDispositionModal}
+        onClose={() => setShowDispositionModal(false)}
+        onSave={handleSaveDisposition}
+        leadName={callSession.leadName}
+        phoneNumber={callSession.phoneNumber}
+      />
     </div>
   );
 };

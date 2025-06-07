@@ -1,6 +1,7 @@
 
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
+import { useToast } from '@/hooks/use-toast';
 
 export interface VicidialLead {
   id: number;
@@ -58,16 +59,17 @@ export const useVicidial = () => {
     isPaused: false
   });
   const [agentMetrics, setAgentMetrics] = useState<AgentMetrics>({
-    callsToday: 0,
-    talkTime: 0,
-    leadsContacted: 0,
-    conversions: 0,
-    avgCallDuration: 0,
-    averageCallTime: '0:00'
+    callsToday: 12,
+    talkTime: 2840,
+    leadsContacted: 15,
+    conversions: 3,
+    avgCallDuration: 236,
+    averageCallTime: '3:56'
   });
   const [isStartingCall, setIsStartingCall] = useState(false);
   const [isEndingCall, setIsEndingCall] = useState(false);
   const [isPausingCall, setIsPausingCall] = useState(false);
+  const { toast } = useToast();
 
   const fetchLeads = async () => {
     try {
@@ -79,12 +81,22 @@ export const useVicidial = () => {
         .select('*')
         .order('created_at', { ascending: false });
 
-      if (fetchError) throw fetchError;
+      if (fetchError) {
+        console.error('Error fetching leads:', fetchError);
+        throw fetchError;
+      }
       
       setLeads(data || []);
-    } catch (err) {
+      return data || [];
+    } catch (err: any) {
       console.error('Error fetching leads:', err);
       setError('Error al cargar los leads');
+      toast({
+        title: "Error",
+        description: "Error al cargar los leads desde la base de datos",
+        variant: "destructive",
+      });
+      return [];
     } finally {
       setLoading(false);
     }
@@ -106,12 +118,22 @@ export const useVicidial = () => {
 
       const { data, error: fetchError } = await query;
 
-      if (fetchError) throw fetchError;
+      if (fetchError) {
+        console.error('Error fetching call logs:', fetchError);
+        throw fetchError;
+      }
       
       setCallLogs(data || []);
-    } catch (err) {
+      return data || [];
+    } catch (err: any) {
       console.error('Error fetching call logs:', err);
       setError('Error al cargar los registros de llamadas');
+      toast({
+        title: "Error",
+        description: "Error al cargar el historial de llamadas",
+        variant: "destructive",
+      });
+      return [];
     } finally {
       setLoading(false);
     }
@@ -131,13 +153,25 @@ export const useVicidial = () => {
         })
         .eq('id', leadId);
 
-      if (updateError) throw updateError;
+      if (updateError) {
+        console.error('Error updating lead status:', updateError);
+        throw updateError;
+      }
       
       await fetchLeads();
+      toast({
+        title: "Lead actualizado",
+        description: `Estado del lead actualizado a: ${status}`,
+      });
       return true;
-    } catch (err) {
+    } catch (err: any) {
       console.error('Error updating lead status:', err);
       setError('Error al actualizar el estado del lead');
+      toast({
+        title: "Error",
+        description: "Error al actualizar el estado del lead",
+        variant: "destructive",
+      });
       return false;
     } finally {
       setLoading(false);
@@ -156,13 +190,25 @@ export const useVicidial = () => {
           call_date: new Date().toISOString()
         }]);
 
-      if (insertError) throw insertError;
+      if (insertError) {
+        console.error('Error creating call log:', insertError);
+        throw insertError;
+      }
       
       await fetchCallLogs();
+      toast({
+        title: "Llamada registrada",
+        description: "La llamada ha sido registrada en el historial",
+      });
       return true;
-    } catch (err) {
+    } catch (err: any) {
       console.error('Error creating call log:', err);
       setError('Error al crear el registro de llamada');
+      toast({
+        title: "Error",
+        description: "Error al registrar la llamada",
+        variant: "destructive",
+      });
       return false;
     } finally {
       setLoading(false);
@@ -183,13 +229,25 @@ export const useVicidial = () => {
           lead_score: 50
         }]);
 
-      if (insertError) throw insertError;
+      if (insertError) {
+        console.error('Error adding lead:', insertError);
+        throw insertError;
+      }
       
       await fetchLeads();
+      toast({
+        title: "Lead agregado",
+        description: "El nuevo lead ha sido agregado exitosamente",
+      });
       return true;
-    } catch (err) {
+    } catch (err: any) {
       console.error('Error adding lead:', err);
       setError('Error al agregar el lead');
+      toast({
+        title: "Error",
+        description: "Error al agregar el nuevo lead",
+        variant: "destructive",
+      });
       return false;
     } finally {
       setLoading(false);
@@ -200,6 +258,9 @@ export const useVicidial = () => {
     try {
       setIsStartingCall(true);
       console.log('Iniciando llamada:', callData);
+      
+      // Simular conexión con Vicidial
+      await new Promise(resolve => setTimeout(resolve, 1500));
       
       setCallSession({
         isActive: true,
@@ -217,15 +278,29 @@ export const useVicidial = () => {
           ...prev,
           status: 'connected'
         }));
-        setIsStartingCall(false);
-      }, 2000);
+        toast({
+          title: "Llamada conectada",
+          description: `Conectado con ${callData.leadName}`,
+        });
+      }, 3000);
+      
+      toast({
+        title: "Llamada iniciada",
+        description: `Marcando a ${callData.phoneNumber}`,
+      });
       
       return true;
-    } catch (err) {
+    } catch (err: any) {
       console.error('Error starting call:', err);
       setError('Error al iniciar la llamada');
-      setIsStartingCall(false);
+      toast({
+        title: "Error",
+        description: "Error al iniciar la llamada",
+        variant: "destructive",
+      });
       return false;
+    } finally {
+      setIsStartingCall(false);
     }
   };
 
@@ -233,17 +308,23 @@ export const useVicidial = () => {
     try {
       setIsEndingCall(true);
       
+      const callDuration = callSession.duration;
+      const leadName = callSession.leadName;
+      
       setCallSession(prev => ({
         ...prev,
-        status: 'ended',
-        isActive: false
+        status: 'ended'
       }));
       
       // Actualizar métricas
       setAgentMetrics(prev => ({
         ...prev,
-        callsToday: prev.callsToday + 1
+        callsToday: prev.callsToday + 1,
+        talkTime: prev.talkTime + callDuration
       }));
+      
+      // Simular tiempo de procesamiento
+      await new Promise(resolve => setTimeout(resolve, 1000));
       
       setTimeout(() => {
         setCallSession({
@@ -253,12 +334,22 @@ export const useVicidial = () => {
           isPaused: false
         });
         setIsEndingCall(false);
-      }, 1000);
+      }, 500);
+      
+      toast({
+        title: "Llamada finalizada",
+        description: `Llamada con ${leadName} finalizada. Duración: ${formatCallDuration(callDuration)}`,
+      });
       
       return true;
-    } catch (err) {
+    } catch (err: any) {
       console.error('Error ending call:', err);
       setError('Error al finalizar la llamada');
+      toast({
+        title: "Error",
+        description: "Error al finalizar la llamada",
+        variant: "destructive",
+      });
       setIsEndingCall(false);
       return false;
     }
@@ -268,20 +359,33 @@ export const useVicidial = () => {
     try {
       setIsPausingCall(true);
       
+      const newStatus = callSession.isPaused ? 'connected' : 'paused';
+      const newPauseState = !callSession.isPaused;
+      
       setCallSession(prev => ({
         ...prev,
-        status: prev.status === 'paused' ? 'connected' : 'paused',
-        isPaused: prev.status !== 'paused'
+        status: newStatus as any,
+        isPaused: newPauseState
       }));
+      
+      toast({
+        title: newPauseState ? "Llamada pausada" : "Llamada reanudada",
+        description: newPauseState ? "La llamada ha sido pausada" : "La llamada ha sido reanudada",
+      });
       
       setTimeout(() => {
         setIsPausingCall(false);
       }, 500);
       
       return true;
-    } catch (err) {
+    } catch (err: any) {
       console.error('Error pausing call:', err);
       setError('Error al pausar la llamada');
+      toast({
+        title: "Error",
+        description: "Error al pausar/reanudar la llamada",
+        variant: "destructive",
+      });
       setIsPausingCall(false);
       return false;
     }
@@ -290,9 +394,31 @@ export const useVicidial = () => {
   const setDisposition = async (disposition: string | object) => {
     try {
       console.log('Setting disposition:', disposition);
+      
+      // Crear registro en call_logs
+      const callLog = {
+        lead_id: callSession.currentLead?.id || null,
+        status: typeof disposition === 'string' ? disposition : (disposition as any).disposition,
+        length_in_sec: callSession.duration,
+        user_id: 'current_user',
+        comments: typeof disposition === 'object' ? (disposition as any).comments : ''
+      };
+      
+      await createCallLog(callLog);
+      
+      toast({
+        title: "Disposición guardada",
+        description: "El resultado de la llamada ha sido registrado",
+      });
+      
       return true;
-    } catch (err) {
+    } catch (err: any) {
       console.error('Error setting disposition:', err);
+      toast({
+        title: "Error",
+        description: "Error al guardar la disposición",
+        variant: "destructive",
+      });
       return false;
     }
   };
@@ -303,13 +429,15 @@ export const useVicidial = () => {
     return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
   };
 
+  // Effect para cargar datos iniciales
   useEffect(() => {
     fetchLeads();
   }, []);
 
+  // Effect para el timer de la llamada
   useEffect(() => {
     let interval: NodeJS.Timeout;
-    if (callSession.isActive && callSession.status === 'connected') {
+    if (callSession.isActive && callSession.status === 'connected' && !callSession.isPaused) {
       interval = setInterval(() => {
         setCallSession(prev => ({
           ...prev,
@@ -320,7 +448,7 @@ export const useVicidial = () => {
     return () => {
       if (interval) clearInterval(interval);
     };
-  }, [callSession.isActive, callSession.status]);
+  }, [callSession.isActive, callSession.status, callSession.isPaused]);
 
   return {
     leads,

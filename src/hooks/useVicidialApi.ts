@@ -55,13 +55,20 @@ export const useVicidialApi = () => {
   }, [toast]);
 
   const login = useCallback(async (loginData: AgentLoginData): Promise<boolean> => {
-    if (!user) return false;
+    if (!user) {
+      toast({
+        title: "Error",
+        description: 'Usuario no autenticado',
+        variant: "destructive",
+      });
+      return false;
+    }
     
     setLoading(true);
     try {
       const response = await vicidialApiService.agentLogin({
         ...loginData,
-        user: user.user_id || user.id
+        user: user.user_id || user.id || ''
       });
 
       if (handleApiResponse(response, 'Sesión iniciada correctamente')) {
@@ -78,7 +85,7 @@ export const useVicidialApi = () => {
       console.error('Login error:', error);
       toast({
         title: "Error",
-        description: 'Error al iniciar sesión',
+        description: 'Error al iniciar sesión en Vicidial',
         variant: "destructive",
       });
     } finally {
@@ -88,11 +95,18 @@ export const useVicidialApi = () => {
   }, [user, handleApiResponse, toast]);
 
   const logout = useCallback(async (): Promise<boolean> => {
-    if (!user || !agentSession.isLoggedIn) return false;
+    if (!user || !agentSession.isLoggedIn) {
+      toast({
+        title: "Error",
+        description: 'No hay sesión activa para cerrar',
+        variant: "destructive",
+      });
+      return false;
+    }
     
     setLoading(true);
     try {
-      const response = await vicidialApiService.agentLogout(user.user_id || user.id);
+      const response = await vicidialApiService.agentLogout(user.user_id || user.id || '');
       
       if (handleApiResponse(response, 'Sesión cerrada correctamente')) {
         setAgentSession({
@@ -120,11 +134,18 @@ export const useVicidialApi = () => {
   }, [user, agentSession.isLoggedIn, handleApiResponse, toast]);
 
   const pause = useCallback(async (pauseCode: string = 'PAUSE'): Promise<boolean> => {
-    if (!user || !agentSession.isLoggedIn) return false;
+    if (!user || !agentSession.isLoggedIn) {
+      toast({
+        title: "Error",
+        description: 'No hay sesión activa',
+        variant: "destructive",
+      });
+      return false;
+    }
     
     setLoading(true);
     try {
-      const response = await vicidialApiService.agentPause(user.user_id || user.id, pauseCode);
+      const response = await vicidialApiService.agentPause(user.user_id || user.id || '', pauseCode);
       
       if (handleApiResponse(response, 'Agente pausado')) {
         setAgentSession(prev => ({
@@ -135,18 +156,30 @@ export const useVicidialApi = () => {
       }
     } catch (error) {
       console.error('Pause error:', error);
+      toast({
+        title: "Error",
+        description: 'Error al pausar agente',
+        variant: "destructive",
+      });
     } finally {
       setLoading(false);
     }
     return false;
-  }, [user, agentSession.isLoggedIn, handleApiResponse]);
+  }, [user, agentSession.isLoggedIn, handleApiResponse, toast]);
 
   const resume = useCallback(async (): Promise<boolean> => {
-    if (!user || !agentSession.isLoggedIn) return false;
+    if (!user || !agentSession.isLoggedIn) {
+      toast({
+        title: "Error",
+        description: 'No hay sesión activa',
+        variant: "destructive",
+      });
+      return false;
+    }
     
     setLoading(true);
     try {
-      const response = await vicidialApiService.agentStatus(user.user_id || user.id, 'READY');
+      const response = await vicidialApiService.agentStatus(user.user_id || user.id || '', 'READY');
       
       if (handleApiResponse(response, 'Agente activo')) {
         setAgentSession(prev => ({
@@ -157,18 +190,30 @@ export const useVicidialApi = () => {
       }
     } catch (error) {
       console.error('Resume error:', error);
+      toast({
+        title: "Error",
+        description: 'Error al reanudar agente',
+        variant: "destructive",
+      });
     } finally {
       setLoading(false);
     }
     return false;
-  }, [user, agentSession.isLoggedIn, handleApiResponse]);
+  }, [user, agentSession.isLoggedIn, handleApiResponse, toast]);
 
   const dialLead = useCallback(async (callData: CallData): Promise<boolean> => {
-    if (!user || !agentSession.isLoggedIn) return false;
+    if (!user || !agentSession.isLoggedIn) {
+      toast({
+        title: "Error",
+        description: 'No hay sesión activa',
+        variant: "destructive",
+      });
+      return false;
+    }
     
     setLoading(true);
     try {
-      const response = await vicidialApiService.dialLead(user.user_id || user.id, callData);
+      const response = await vicidialApiService.dialLead(user.user_id || user.id || '', callData);
       
       if (handleApiResponse(response, 'Llamada iniciada')) {
         setCallSession({
@@ -187,18 +232,30 @@ export const useVicidialApi = () => {
       }
     } catch (error) {
       console.error('Dial error:', error);
+      toast({
+        title: "Error",
+        description: 'Error al iniciar llamada',
+        variant: "destructive",
+      });
     } finally {
       setLoading(false);
     }
     return false;
-  }, [user, agentSession.isLoggedIn, handleApiResponse]);
+  }, [user, agentSession.isLoggedIn, handleApiResponse, toast]);
 
   const hangup = useCallback(async (): Promise<boolean> => {
-    if (!user || !callSession.isActive) return false;
+    if (!user || !callSession.isActive) {
+      toast({
+        title: "Error",
+        description: 'No hay llamada activa',
+        variant: "destructive",
+      });
+      return false;
+    }
     
     setLoading(true);
     try {
-      const response = await vicidialApiService.hangupCall(user.user_id || user.id);
+      const response = await vicidialApiService.hangupCall(user.user_id || user.id || '');
       
       if (handleApiResponse(response, 'Llamada finalizada')) {
         setCallSession({
@@ -214,47 +271,76 @@ export const useVicidialApi = () => {
       }
     } catch (error) {
       console.error('Hangup error:', error);
+      toast({
+        title: "Error",
+        description: 'Error al finalizar llamada',
+        variant: "destructive",
+      });
     } finally {
       setLoading(false);
     }
     return false;
-  }, [user, callSession.isActive, handleApiResponse]);
+  }, [user, callSession.isActive, handleApiResponse, toast]);
 
   const setDisposition = useCallback(async (disposition: string, comments?: string): Promise<boolean> => {
-    if (!user || !agentSession.isLoggedIn) return false;
+    if (!user || !agentSession.isLoggedIn) {
+      toast({
+        title: "Error",
+        description: 'No hay sesión activa',
+        variant: "destructive",
+      });
+      return false;
+    }
     
     setLoading(true);
     try {
-      const response = await vicidialApiService.setDisposition(user.user_id || user.id, disposition, comments);
+      const response = await vicidialApiService.setDisposition(user.user_id || user.id || '', disposition, comments);
       
       if (handleApiResponse(response, 'Disposición establecida')) {
         return true;
       }
     } catch (error) {
       console.error('Disposition error:', error);
+      toast({
+        title: "Error",
+        description: 'Error al establecer disposición',
+        variant: "destructive",
+      });
     } finally {
       setLoading(false);
     }
     return false;
-  }, [user, agentSession.isLoggedIn, handleApiResponse]);
+  }, [user, agentSession.isLoggedIn, handleApiResponse, toast]);
 
   const transferCall = useCallback(async (transferTo: string, transferType: string = 'BLIND'): Promise<boolean> => {
-    if (!user || !callSession.isActive) return false;
+    if (!user || !callSession.isActive) {
+      toast({
+        title: "Error",
+        description: 'No hay llamada activa para transferir',
+        variant: "destructive",
+      });
+      return false;
+    }
     
     setLoading(true);
     try {
-      const response = await vicidialApiService.transferCall(user.user_id || user.id, transferTo, transferType);
+      const response = await vicidialApiService.transferCall(user.user_id || user.id || '', transferTo, transferType);
       
       if (handleApiResponse(response, 'Llamada transferida')) {
         return true;
       }
     } catch (error) {
       console.error('Transfer error:', error);
+      toast({
+        title: "Error",
+        description: 'Error al transferir llamada',
+        variant: "destructive",
+      });
     } finally {
       setLoading(false);
     }
     return false;
-  }, [user, callSession.isActive, handleApiResponse]);
+  }, [user, callSession.isActive, handleApiResponse, toast]);
 
   return {
     loading,
