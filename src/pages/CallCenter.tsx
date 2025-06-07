@@ -196,7 +196,7 @@ const CallCenter = () => {
             )}
           </Badge>
           <Badge variant="outline">
-            Ext: {user?.user_metadata?.extension || '101'}
+            Ext: {user?.extension || '101'}
           </Badge>
         </div>
       </div>

@@ -87,7 +87,7 @@ const LeadsManagement = () => {
         phone: lead.phone_number || '',
         phone_number: lead.phone_number,
         email: lead.email,
-        city: lead.city,
+        city: lead.city || undefined,
         status: lead.status?.toLowerCase() || 'new',
         score: lead.lead_score || 0,
         lead_score: lead.lead_score,
