@@ -63,8 +63,8 @@ const LeadsManagement = () => {
   const { toast } = useToast();
   const [leads, setLeads] = useState<Lead[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
-  const [statusFilter, setStatusFilter] = useState('');
-  const [sourceFilter, setSourceFilter] = useState('');
+  const [statusFilter, setStatusFilter] = useState('all');
+  const [sourceFilter, setSourceFilter] = useState('all');
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('list');
   const [showNewLeadModal, setShowNewLeadModal] = useState(false);
@@ -128,8 +128,8 @@ const LeadsManagement = () => {
         lead.email.toLowerCase().includes(searchTerm.toLowerCase())
       : true;
 
-    const statusMatch = statusFilter ? lead.status === statusFilter : true;
-    const sourceMatch = sourceFilter ? lead.source === sourceFilter : true;
+    const statusMatch = statusFilter === 'all' ? true : lead.status === statusFilter;
+    const sourceMatch = sourceFilter === 'all' ? true : lead.source === sourceFilter;
 
     return searchMatch && statusMatch && sourceMatch;
   });
@@ -204,12 +204,12 @@ const LeadsManagement = () => {
                 onChange={handleSearchChange}
                 className="md:col-span-1"
               />
-              <Select onValueChange={handleStatusFilterChange}>
+              <Select onValueChange={handleStatusFilterChange} value={statusFilter}>
                 <SelectTrigger className="md:col-span-1">
                   <SelectValue placeholder="Filtrar por estado" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">Todos los estados</SelectItem>
+                  <SelectItem value="all">Todos los estados</SelectItem>
                   <SelectItem value="NEW">Nuevo</SelectItem>
                   <SelectItem value="CONTACTED">Contactado</SelectItem>
                   <SelectItem value="INTERESTED">Interesado</SelectItem>
@@ -218,12 +218,12 @@ const LeadsManagement = () => {
                   <SelectItem value="CLOSED_LOST">Perdido</SelectItem>
                 </SelectContent>
               </Select>
-              <Select onValueChange={handleSourceFilterChange}>
+              <Select onValueChange={handleSourceFilterChange} value={sourceFilter}>
                 <SelectTrigger className="md:col-span-1">
                   <SelectValue placeholder="Filtrar por fuente" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">Todas las fuentes</SelectItem>
+                  <SelectItem value="all">Todas las fuentes</SelectItem>
                   <SelectItem value="Facebook">Facebook</SelectItem>
                   <SelectItem value="Google">Google</SelectItem>
                   <SelectItem value="Instagram">Instagram</SelectItem>
