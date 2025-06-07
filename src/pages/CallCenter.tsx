@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -182,7 +183,7 @@ const CallCenter = () => {
   // Función para enviar WhatsApp
   const sendWhatsApp = (phone: string, name: string) => {
     const cleanPhone = phone.replace(/\D/g, '');
-    const userName = user?.user_metadata?.name || user?.email?.split('@')[0] || 'un asesor';
+    const userName = user?.name || user?.email?.split('@')[0] || 'un asesor';
     const message = encodeURIComponent(`Hola ${name}, soy ${userName} de CCD Capacitación. ¿Tienes unos minutos para conversar sobre nuestros cursos?`);
     const whatsappUrl = `https://wa.me/${cleanPhone}?text=${message}`;
     window.open(whatsappUrl, '_blank');

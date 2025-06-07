@@ -158,6 +158,22 @@ const LeadsManagement = () => {
     });
   };
 
+  const handleCall = (phone: string, name: string, id: string) => {
+    console.log('Iniciando llamada:', { phone, name, id });
+    toast({
+      title: "Iniciando llamada",
+      description: `Llamando a ${name} - ${phone}`,
+    });
+  };
+
+  const handleView = (id: string) => {
+    console.log('Viendo lead:', id);
+    toast({
+      title: "Ver lead",
+      description: `Mostrando detalles del lead ${id}`,
+    });
+  };
+
   return (
     <>
       <div className="p-6 space-y-6">
@@ -234,7 +250,18 @@ const LeadsManagement = () => {
                 </TabsTrigger>
               </TabsList>
               <TabsContent value="list" className="p-4">
-                <LeadsListView leads={filteredLeads} loading={loading} />
+                {loading ? (
+                  <div className="flex items-center justify-center p-8">
+                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900"></div>
+                    <span className="ml-2">Cargando leads...</span>
+                  </div>
+                ) : (
+                  <LeadsListView 
+                    leads={filteredLeads} 
+                    onCall={handleCall}
+                    onView={handleView}
+                  />
+                )}
               </TabsContent>
               <TabsContent value="analytics" className="p-4">
                 <div>
