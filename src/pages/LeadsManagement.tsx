@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -15,115 +15,110 @@ import {
   Phone,
   MessageSquare,
   LayoutGrid,
-  List
+  List,
+  FileSpreadsheet,
+  Eye
 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
+import { useToast } from '@/hooks/use-toast';
+import { supabase } from '@/integrations/supabase/client';
 import LeadsListView from '@/components/LeadsListView';
+import NewLeadModal from '@/components/NewLeadModal';
+import CallbackModal from '@/components/CallbackModal';
+
+interface Lead {
+  id: string;
+  name: string;
+  first_name?: string;
+  last_name?: string;
+  phone: string;
+  phone_number?: string;
+  email?: string;
+  city?: string;
+  status: string;
+  score: number;
+  lead_score?: number;
+  source: string;
+  source_id?: string;
+  course: string;
+  interest_course?: string;
+  lastContact?: string;
+  last_local_call_time?: string;
+  nextAction?: string;
+  attemptCount: number;
+  called_count?: number;
+  disposition?: string;
+  callbackDate?: string;
+  callbackTime?: string;
+}
 
 const LeadsManagement = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
+  const { toast } = useToast();
   const [searchTerm, setSearchTerm] = useState('');
   const [filterStatus, setFilterStatus] = useState('all');
   const [filterSource, setFilterSource] = useState('all');
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
+  const [leads, setLeads] = useState<Lead[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [showNewLeadModal, setShowNewLeadModal] = useState(false);
+  const [showCallbackModal, setShowCallbackModal] = useState(false);
+  const [selectedLead, setSelectedLead] = useState<Lead | null>(null);
 
-  // Datos de ejemplo para leads con todos los campos requeridos
-  const leads = [
-    {
-      id: '1',
-      name: 'María González',
-      phone: '+51 301 234 5678',
-      email: 'maria.gonzalez@email.com',
-      city: 'Lima',
-      status: 'qualified',
-      score: 85,
-      source: 'Facebook',
-      course: 'Excel Avanzado',
-      lastContact: '2024-01-26T14:20:00Z',
-      nextAction: 'Enviar propuesta de Excel Avanzado',
-      attemptCount: 3,
-      disposition: 'MUY_INTERESADO',
-      callbackDate: '2024-01-27',
-      callbackTime: '14:00'
-    },
-    {
-      id: '2',
-      name: 'Carlos Rodríguez',
-      phone: '+51 300 876 5432',
-      email: 'carlos.rodriguez@email.com',
-      city: 'Arequipa',
-      status: 'new',
-      score: 92,
-      source: 'Google',
-      course: 'Contabilidad Básica',
-      lastContact: '2024-01-25T10:15:00Z',
-      nextAction: 'Primera llamada de contacto',
-      attemptCount: 1,
-      disposition: 'NO_CONTESTA'
-    },
-    {
-      id: '3',
-      name: 'Ana Martínez',
-      phone: '+51 301 567 8901',
-      email: 'ana.martinez@email.com',
-      city: 'Trujillo',
-      status: 'contacted',
-      score: 78,
-      source: 'TikTok',
-      course: 'Marketing Digital',
-      lastContact: '2024-01-24T16:30:00Z',
-      nextAction: 'Follow-up llamada',
-      attemptCount: 2,
-      disposition: 'CLTE_POTENCIAL'
-    },
-    {
-      id: '4',
-      name: 'Luis Pérez',
-      phone: '+51 315 246 8135',
-      email: 'luis.perez@email.com',
-      city: 'Cusco',
-      status: 'proposal',
-      score: 95,
-      source: 'Referido',
-      course: 'Administración',
-      lastContact: '2024-01-23T09:45:00Z',
-      nextAction: 'Seguimiento propuesta enviada',
-      attemptCount: 4,
-      disposition: 'VOLVER_LLAMAR',
-      callbackDate: '2024-01-28',
-      callbackTime: '10:00'
-    },
-    {
-      id: '5',
-      name: 'Sandra López',
-      phone: '+51 312 345 6789',
-      email: 'sandra.lopez@email.com',
-      city: 'Piura',
-      status: 'qualified',
-      score: 88,
-      source: 'Instagram',
-      course: 'Recursos Humanos',
-      lastContact: '2024-01-22T11:20:00Z',
-      nextAction: 'Agendar demo personalizada',
-      attemptCount: 2,
-      disposition: 'MUY_INTERESADO'
-    },
-    {
-      id: '6',
-      name: 'Andrés Gómez',
-      phone: '+51 318 654 3210',
-      city: 'Chiclayo',
-      status: 'new',
-      score: 72,
-      source: 'Facebook',
-      course: 'Office Básico',
-      nextAction: 'Primera llamada de contacto',
-      attemptCount: 0,
-      disposition: 'NO_CONTESTA'
+  // Cargar leads desde la base de datos
+  const fetchLeads = async () => {
+    try {
+      setLoading(true);
+      const { data, error } = await supabase
+        .from('leads')
+        .select('*')
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+
+      // Transformar datos para el componente
+      const transformedLeads: Lead[] = data.map(lead => ({
+        id: lead.id.toString(),
+        name: `${lead.first_name || ''} ${lead.last_name || ''}`.trim() || 'Sin nombre',
+        first_name: lead.first_name,
+        last_name: lead.last_name,
+        phone: lead.phone_number || '',
+        phone_number: lead.phone_number,
+        email: lead.email,
+        city: lead.city,
+        status: lead.status?.toLowerCase() || 'new',
+        score: lead.lead_score || 0,
+        lead_score: lead.lead_score,
+        source: lead.source_id || 'Desconocido',
+        source_id: lead.source_id,
+        course: lead.interest_course || 'No especificado',
+        interest_course: lead.interest_course,
+        lastContact: lead.last_local_call_time,
+        last_local_call_time: lead.last_local_call_time,
+        nextAction: 'Contactar lead',
+        attemptCount: lead.called_count || 0,
+        called_count: lead.called_count,
+        disposition: 'PENDIENTE'
+      }));
+
+      setLeads(transformedLeads);
+    } catch (error) {
+      console.error('Error fetching leads:', error);
+      toast({
+        title: "Error al cargar leads",
+        description: "No se pudieron cargar los leads. Intenta de nuevo.",
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
     }
-  ];
+  };
+
+  useEffect(() => {
+    fetchLeads();
+  }, []);
 
   const filteredLeads = leads.filter(lead => {
     const matchesSearch = lead.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -141,15 +136,71 @@ const LeadsManagement = () => {
 
   const handleCall = (phone: string, name: string, id: string) => {
     console.log('Iniciando llamada:', { phone, name, id });
-    // Aquí iría la integración con Vicidial
     navigate('/call-center');
+  };
+
+  const handleScheduleCallback = (lead: Lead) => {
+    setSelectedLead(lead);
+    setShowCallbackModal(true);
+  };
+
+  const handleExportLeads = () => {
+    try {
+      // Preparar datos para exportar
+      const exportData = filteredLeads.map(lead => ({
+        'ID': lead.id,
+        'Nombre': lead.name,
+        'Teléfono': lead.phone,
+        'Email': lead.email || '',
+        'Ciudad': lead.city || '',
+        'Estado': lead.status,
+        'Score': lead.score,
+        'Fuente': lead.source,
+        'Curso de Interés': lead.course,
+        'Intentos de Llamada': lead.attemptCount,
+        'Último Contacto': lead.lastContact || 'Nunca'
+      }));
+
+      // Convertir a CSV
+      const headers = Object.keys(exportData[0]).join(',');
+      const csvContent = exportData.map(row => 
+        Object.values(row).map(field => 
+          typeof field === 'string' && field.includes(',') ? `"${field}"` : field
+        ).join(',')
+      ).join('\n');
+      
+      const csv = `${headers}\n${csvContent}`;
+      
+      // Descargar archivo
+      const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+      const link = document.createElement('a');
+      const url = URL.createObjectURL(blob);
+      link.setAttribute('href', url);
+      link.setAttribute('download', `leads_${new Date().toISOString().split('T')[0]}.csv`);
+      link.style.visibility = 'hidden';
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+
+      toast({
+        title: "Exportación exitosa",
+        description: `Se exportaron ${filteredLeads.length} leads a CSV`,
+      });
+    } catch (error) {
+      console.error('Error exporting leads:', error);
+      toast({
+        title: "Error al exportar",
+        description: "No se pudo exportar el archivo. Intenta de nuevo.",
+        variant: "destructive",
+      });
+    }
   };
 
   const leadStats = [
     { label: 'Total Leads', value: leads.length, icon: Users, color: 'text-blue-600' },
-    { label: 'Calificados', value: leads.filter(l => l.status === 'qualified').length, icon: TrendingUp, color: 'text-green-600' },
     { label: 'Nuevos', value: leads.filter(l => l.status === 'new').length, icon: Plus, color: 'text-purple-600' },
-    { label: 'En Propuesta', value: leads.filter(l => l.status === 'proposal').length, icon: MessageSquare, color: 'text-orange-600' }
+    { label: 'Contactados', value: leads.filter(l => l.status === 'contacted').length, icon: Phone, color: 'text-yellow-600' },
+    { label: 'Calificados', value: leads.filter(l => l.status === 'qualified').length, icon: TrendingUp, color: 'text-green-600' }
   ];
 
   const getStatusColor = (status: string) => {
@@ -158,10 +209,22 @@ const LeadsManagement = () => {
       'contacted': 'bg-yellow-100 text-yellow-800',
       'qualified': 'bg-green-100 text-green-800',
       'proposal': 'bg-purple-100 text-purple-800',
-      'closed': 'bg-gray-100 text-gray-800'
+      'closed': 'bg-gray-100 text-gray-800',
+      'closed_won': 'bg-green-100 text-green-800',
+      'closed_lost': 'bg-red-100 text-red-800'
     };
     return colors[status as keyof typeof colors] || 'bg-gray-100 text-gray-800';
   };
+
+  if (loading) {
+    return (
+      <div className="p-6 max-w-7xl mx-auto">
+        <div className="flex items-center justify-center h-64">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="p-6 space-y-6 max-w-7xl mx-auto">
@@ -179,11 +242,11 @@ const LeadsManagement = () => {
           </p>
         </div>
         <div className="flex gap-2">
-          <Button variant="outline">
+          <Button variant="outline" onClick={handleExportLeads}>
             <Download className="h-4 w-4 mr-2" />
             Exportar
           </Button>
-          <Button>
+          <Button onClick={() => setShowNewLeadModal(true)}>
             <Plus className="h-4 w-4 mr-2" />
             Nuevo Lead
           </Button>
@@ -256,7 +319,8 @@ const LeadsManagement = () => {
                 <SelectItem value="contacted">Contactado</SelectItem>
                 <SelectItem value="qualified">Calificado</SelectItem>
                 <SelectItem value="proposal">Propuesta</SelectItem>
-                <SelectItem value="closed">Cerrado</SelectItem>
+                <SelectItem value="closed_won">Cerrado - Ganado</SelectItem>
+                <SelectItem value="closed_lost">Cerrado - Perdido</SelectItem>
               </SelectContent>
             </Select>
             <Select value={filterSource} onValueChange={setFilterSource}>
@@ -311,8 +375,9 @@ const LeadsManagement = () => {
                   </div>
 
                   <div className="text-sm text-gray-600">
-                    <p><strong>Ciudad:</strong> {lead.city}</p>
+                    <p><strong>Ciudad:</strong> {lead.city || 'No especificada'}</p>
                     <p><strong>Curso:</strong> {lead.course}</p>
+                    <p><strong>Intentos:</strong> {lead.attemptCount}</p>
                     {lead.nextAction && (
                       <p className="text-blue-600 mt-1">
                         <strong>Próxima acción:</strong> {lead.nextAction}
@@ -322,10 +387,14 @@ const LeadsManagement = () => {
 
                   <div className="flex gap-2 pt-2">
                     <Button size="sm" className="flex-1" onClick={() => handleViewLead(lead.id)}>
-                      Ver Perfil
+                      <Eye className="h-4 w-4 mr-1" />
+                      Ver
                     </Button>
                     <Button size="sm" variant="outline" onClick={() => handleCall(lead.phone, lead.name, lead.id)}>
                       <Phone className="h-4 w-4" />
+                    </Button>
+                    <Button size="sm" variant="outline" onClick={() => handleScheduleCallback(lead)}>
+                      <MessageSquare className="h-4 w-4" />
                     </Button>
                   </div>
                 </div>
@@ -335,17 +404,44 @@ const LeadsManagement = () => {
         </div>
       )}
 
-      {filteredLeads.length === 0 && (
+      {filteredLeads.length === 0 && !loading && (
         <Card>
           <CardContent className="p-8 text-center">
             <Users className="h-12 w-12 text-gray-400 mx-auto mb-4" />
             <h3 className="text-lg font-medium text-gray-900 mb-2">No se encontraron leads</h3>
             <p className="text-gray-600">
-              Intenta ajustar los filtros o crear un nuevo lead.
+              {searchTerm || filterStatus !== 'all' || filterSource !== 'all' 
+                ? 'Intenta ajustar los filtros para ver más leads.'
+                : 'Comienza creando tu primer lead.'}
             </p>
+            {!searchTerm && filterStatus === 'all' && filterSource === 'all' && (
+              <Button onClick={() => setShowNewLeadModal(true)} className="mt-4">
+                <Plus className="h-4 w-4 mr-2" />
+                Crear Primer Lead
+              </Button>
+            )}
           </CardContent>
         </Card>
       )}
+
+      {/* Modales */}
+      <NewLeadModal
+        isOpen={showNewLeadModal}
+        onClose={() => setShowNewLeadModal(false)}
+        onLeadCreated={fetchLeads}
+      />
+
+      <CallbackModal
+        isOpen={showCallbackModal}
+        onClose={() => setShowCallbackModal(false)}
+        leadId={selectedLead?.id}
+        leadName={selectedLead?.name}
+        phoneNumber={selectedLead?.phone}
+        onCallbackScheduled={() => {
+          fetchLeads();
+          setSelectedLead(null);
+        }}
+      />
     </div>
   );
 };

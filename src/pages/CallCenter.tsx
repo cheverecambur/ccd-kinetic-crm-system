@@ -154,7 +154,8 @@ const CallCenter = () => {
   // Función para enviar WhatsApp
   const sendWhatsApp = (phone: string, name: string) => {
     const cleanPhone = phone.replace(/\D/g, '');
-    const message = encodeURIComponent(`Hola ${name}, soy ${user?.first_name || 'un asesor'} de CCD Capacitación. ¿Tienes unos minutos para conversar sobre nuestros cursos?`);
+    const userName = user?.email?.split('@')[0] || 'un asesor';
+    const message = encodeURIComponent(`Hola ${name}, soy ${userName} de CCD Capacitación. ¿Tienes unos minutos para conversar sobre nuestros cursos?`);
     const whatsappUrl = `https://wa.me/${cleanPhone}?text=${message}`;
     window.open(whatsappUrl, '_blank');
   };
@@ -195,7 +196,7 @@ const CallCenter = () => {
             )}
           </Badge>
           <Badge variant="outline">
-            Ext: {user?.extension || '101'}
+            Ext: {user?.user_metadata?.extension || '101'}
           </Badge>
         </div>
       </div>
