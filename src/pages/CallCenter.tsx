@@ -19,13 +19,126 @@ import { useVicidialReal } from '@/hooks/useVicidialReal';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
 import ManualDialer from '@/components/ManualDialer';
-import CallControls from '@/components/CallControls';
-import DispositionModal, { DispositionData } from '@/components/DispositionModal';
+import DispositionModal from '@/components/DispositionModal';
 import VicidialDataExtractor from '@/components/VicidialDataExtractor';
 import NewLeadModal from '@/components/NewLeadModal';
 import CallbackModal from '@/components/CallbackModal';
 import SaleRegistrationModal from '@/components/SaleRegistrationModal';
 import AIAssistant from '@/components/AIAssistant';
+
+// Crear un componente CallControls específico para VicidialReal
+const VicidialCallControls = ({ 
+  callSession, 
+  onHangup, 
+  onPause, 
+  onMute, 
+  onHold, 
+  formatCallDuration,
+  isEndingCall,
+  isPausingCall 
+}: {
+  callSession: any;
+  onHangup: () => void;
+  onPause: () => void;
+  onMute: () => void;
+  onHold: () => void;
+  formatCallDuration: (seconds: number) => string;
+  isEndingCall: boolean;
+  isPausingCall: boolean;
+}) => {
+  if (!callSession.isActive) {
+    return (
+      <Card>
+        <CardContent className="p-6 text-center">
+          <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+            <Phone className="h-8 w-8 text-gray-400" />
+          </div>
+          <p className="text-gray-600">No hay llamada activa</p>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle className="flex items-center justify-between">
+          <span className="flex items-center gap-2">
+            <PhoneCall className="h-5 w-5" />
+            Llamada Activa
+          </span>
+          <Badge 
+            className={
+              callSession.status === 'CONNECTED' ? 'bg-green-500' :
+              callSession.status === 'RINGING' ? 'bg-blue-500' :
+              callSession.status === 'PAUSED' ? 'bg-yellow-500' :
+              'bg-gray-500'
+            }
+          >
+            {callSession.status}
+          </Badge>
+        </CardTitle>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        <div className="text-center">
+          <div className="text-3xl font-bold text-blue-600">
+            {formatCallDuration(callSession.duration)}
+          </div>
+          <p className="text-gray-600">Duración de la llamada</p>
+          {callSession.leadName && (
+            <p className="text-lg font-medium mt-2">{callSession.leadName}</p>
+          )}
+          {callSession.phoneNumber && (
+            <p className="text-gray-600">{callSession.phoneNumber}</p>
+          )}
+        </div>
+
+        <div className="grid grid-cols-2 gap-3">
+          <Button
+            onClick={onPause}
+            disabled={isPausingCall}
+            variant={callSession.isPaused ? "default" : "outline"}
+            className="w-full"
+          >
+            {isPausingCall ? 'Procesando...' : (callSession.isPaused ? 'Reanudar' : 'Pausar')}
+          </Button>
+          
+          <Button
+            onClick={onMute}
+            variant="outline"
+            className="w-full"
+          >
+            Silenciar
+          </Button>
+          
+          <Button
+            onClick={onHold}
+            variant="outline"
+            className="w-full"
+          >
+            En Espera
+          </Button>
+          
+          <Button
+            onClick={onHangup}
+            disabled={isEndingCall}
+            variant="destructive"
+            className="w-full"
+          >
+            {isEndingCall ? 'Finalizando...' : 'Colgar'}
+          </Button>
+        </div>
+      </CardContent>
+    </Card>
+  );
+};
+
+interface DispositionData {
+  disposition: string;
+  comments?: string;
+  callbackDate?: string;
+  callbackTime?: string;
+}
 
 const CallCenter = () => {
   const { user } = useAuth();
@@ -307,8 +420,8 @@ const CallCenter = () => {
               </CardContent>
             </Card>
 
-            {/* Controles de llamada */}
-            <CallControls
+            {/* Controles de llamada usando VicidialCallControls */}
+            <VicidialCallControls
               callSession={callSession}
               onHangup={handleEndCall}
               onPause={handlePauseCall}
@@ -513,7 +626,9 @@ const CallCenter = () => {
                 <Button 
                   variant="outline" 
                   className="w-full justify-start"
-                  onClick={() => sendWhatsApp(nextScheduledLead.phone, nextScheduledLead.name)}
+                  onClick={() =>
+                    sendWhatsApp(nextScheduledLead.phone, nextScheduledLead.name)
+                  }
                 >
                   <MessageSquare className="h-4 w-4 mr-2" />
                   Enviar WhatsApp
@@ -534,6 +649,14 @@ const CallCenter = () => {
                 >
                   <Settings className="h-4 w-4 mr-2" />
                   Registrar Venta
+                </Button>
+                <Button 
+                  variant="outline" 
+                  className="w-full justify-start"
+                  onClick={() => setShowNewLeadModal(true)}
+                >
+                  <User className="h-4 w-4 mr-2" />
+                  Nuevo Lead
                 </Button>
               </CardContent>
             </Card>

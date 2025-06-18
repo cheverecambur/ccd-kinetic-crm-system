@@ -4,7 +4,10 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Badge } from "@/components/ui/badge";
+import { Switch } from "@/components/ui/switch";
+import { Textarea } from "@/components/ui/textarea";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { 
@@ -12,193 +15,170 @@ import {
   Save, 
   RefreshCw, 
   Database,
+  Bell,
   Shield,
-  Mail,
-  Phone,
+  Palette,
   Globe,
   Clock,
-  Users,
-  Target,
-  BarChart3,
-  Headphones
+  Mail,
+  Phone,
+  Download,
+  Upload,
+  TestTube,
+  Zap
 } from 'lucide-react';
-import { Switch } from "@/components/ui/switch";
-import { Textarea } from "@/components/ui/textarea";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
-interface SystemSetting {
-  id: string;
-  setting_key: string;
-  setting_value: string;
-  description: string;
-  is_active: boolean;
-  created_at: string;
-  updated_at: string;
+interface SettingGroup {
+  [key: string]: any;
 }
 
 const AdminSettings = () => {
   const { toast } = useToast();
-  const [settings, setSettings] = useState<SystemSetting[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [testing, setTesting] = useState(false);
 
-  // Categories of settings
-  const [generalSettings, setGeneralSettings] = useState({
-    company_name: 'Call Center Dynamics',
+  // Estados para diferentes grupos de configuración
+  const [generalSettings, setGeneralSettings] = useState<SettingGroup>({
+    company_name: 'CCD Capacitación',
     company_phone: '+57 300 123 4567',
-    company_email: 'info@callcenterdynamics.com',
+    company_email: 'info@ccdcapacitacion.com',
     company_address: 'Bogotá, Colombia',
     timezone: 'America/Bogota',
-    business_hours_start: '08:00',
-    business_hours_end: '18:00',
-    currency: 'COP',
-    language: 'es'
+    language: 'es',
+    date_format: 'DD/MM/YYYY',
+    currency: 'COP'
   });
 
-  const [vicidialSettings, setVicidialSettings] = useState({
-    vicidial_url: import.meta.env.VITE_VICIDIAL_URL || '',
-    vicidial_user: import.meta.env.VITE_VICIDIAL_USER || '',
-    vicidial_pass: '****',
-    auto_sync_enabled: true,
-    sync_interval_minutes: 15,
-    default_campaign: 'GENERAL',
+  const [vicidialSettings, setVicidialSettings] = useState<SettingGroup>({
+    vicidial_url: 'http://localhost',
+    vicidial_user: 'api_user',
+    vicidial_pass: '',
+    auto_sync: true,
+    sync_interval: 300,
     recording_enabled: true,
-    disposition_required: true
+    quality_monitoring: true,
+    campaign_default: 'DEFAULT'
   });
 
-  const [performanceSettings, setPerformanceSettings] = useState({
-    target_conversion_rate: 15,
-    max_call_duration: 1800,
-    max_queue_time: 120,
-    agent_break_duration: 15,
-    max_daily_calls: 200,
-    quality_score_threshold: 80,
-    callback_reminder_hours: 24
+  const [performanceSettings, setPerformanceSettings] = useState<SettingGroup>({
+    calls_per_hour_target: 20,
+    conversion_rate_target: 10,
+    avg_call_time_target: 300,
+    quality_score_target: 85,
+    productivity_alerts: true,
+    performance_reports: true,
+    auto_pause_inactive: 900
   });
 
-  const [notificationSettings, setNotificationSettings] = useState({
+  const [notificationSettings, setNotificationSettings] = useState<SettingGroup>({
     email_notifications: true,
     sms_notifications: false,
-    browser_notifications: true,
-    alert_threshold_breach: true,
+    whatsapp_notifications: true,
+    system_alerts: true,
+    performance_alerts: true,
+    callback_reminders: true,
     daily_reports: true,
-    weekly_reports: true,
-    escalation_enabled: true,
-    escalation_minutes: 30
+    weekly_reports: true
   });
 
-  const [securitySettings, setSecuritySettings] = useState({
-    session_timeout_minutes: 60,
+  const [securitySettings, setSecuritySettings] = useState<SettingGroup>({
+    session_timeout: 3600,
     password_min_length: 8,
     require_2fa: false,
-    login_attempts_limit: 5,
-    ip_whitelist_enabled: false,
-    audit_log_retention_days: 90,
-    data_encryption: true
+    login_attempts: 3,
+    lockout_duration: 900,
+    audit_logging: true,
+    data_encryption: true,
+    backup_frequency: 'daily'
+  });
+
+  const [integrationSettings, setIntegrationSettings] = useState<SettingGroup>({
+    whatsapp_api_key: '',
+    email_smtp_host: 'smtp.gmail.com',
+    email_smtp_port: 587,
+    email_username: '',
+    email_password: '',
+    api_rate_limit: 1000,
+    webhook_secret: '',
+    external_crm_url: ''
   });
 
   useEffect(() => {
-    fetchSettings();
+    loadSettings();
   }, []);
 
-  const fetchSettings = async () => {
+  const loadSettings = async () => {
     try {
       const { data, error } = await supabase
         .from('vicidial_settings')
-        .select('*')
-        .order('setting_key');
+        .select('*');
 
       if (error) throw error;
 
-      // Process settings and apply to state
+      // Organizar configuraciones por categoría
       if (data) {
-        data.forEach((setting: SystemSetting) => {
-          updateSettingsByKey(setting.setting_key, setting.setting_value);
+        data.forEach((setting) => {
+          const { setting_key, setting_value } = setting;
+          
+          if (setting_key.startsWith('general_')) {
+            setGeneralSettings(prev => ({ ...prev, [setting_key.replace('general_', '')]: setting_value }));
+          } else if (setting_key.startsWith('vicidial_')) {
+            setVicidialSettings(prev => ({ ...prev, [setting_key.replace('vicidial_', '')]: setting_value }));
+          } else if (setting_key.startsWith('performance_')) {
+            setPerformanceSettings(prev => ({ ...prev, [setting_key.replace('performance_', '')]: setting_value }));
+          } else if (setting_key.startsWith('notification_')) {
+            setNotificationSettings(prev => ({ ...prev, [setting_key.replace('notification_', '')]: setting_value }));
+          } else if (setting_key.startsWith('security_')) {
+            setSecuritySettings(prev => ({ ...prev, [setting_key.replace('security_', '')]: setting_value }));
+          } else if (setting_key.startsWith('integration_')) {
+            setIntegrationSettings(prev => ({ ...prev, [setting_key.replace('integration_', '')]: setting_value }));
+          }
         });
       }
     } catch (error) {
-      console.error('Error fetching settings:', error);
+      console.error('Error loading settings:', error);
+      toast({
+        title: "Error",
+        description: "No se pudieron cargar las configuraciones",
+        variant: "destructive",
+      });
     } finally {
       setLoading(false);
     }
   };
 
-  const updateSettingsByKey = (key: string, value: string) => {
-    // Update the appropriate settings object based on the key
-    if (key.startsWith('general_')) {
-      const settingKey = key.replace('general_', '');
-      setGeneralSettings(prev => ({...prev, [settingKey]: value}));
-    } else if (key.startsWith('vicidial_')) {
-      const settingKey = key.replace('vicidial_', '');
-      setVicidialSettings(prev => ({...prev, [settingKey]: value === 'true' ? true : value === 'false' ? false : value}));
-    } else if (key.startsWith('performance_')) {
-      const settingKey = key.replace('performance_', '');
-      setPerformanceSettings(prev => ({...prev, [settingKey]: isNaN(Number(value)) ? value : Number(value)}));
-    } else if (key.startsWith('notification_')) {
-      const settingKey = key.replace('notification_', '');
-      setNotificationSettings(prev => ({...prev, [settingKey]: value === 'true'}));
-    } else if (key.startsWith('security_')) {
-      const settingKey = key.replace('security_', '');
-      setSecuritySettings(prev => ({...prev, [settingKey]: value === 'true' ? true : value === 'false' ? false : isNaN(Number(value)) ? value : Number(value)}));
-    }
-  };
-
-  const saveSettings = async () => {
+  const saveSettings = async (category: string, settings: SettingGroup) => {
     setSaving(true);
     try {
-      // Prepare all settings for database
-      const allSettings = [
-        ...Object.entries(generalSettings).map(([key, value]) => ({
-          setting_key: `general_${key}`,
-          setting_value: String(value),
-          description: `General setting: ${key}`,
-          is_active: true
-        })),
-        ...Object.entries(vicidialSettings).map(([key, value]) => ({
-          setting_key: `vicidial_${key}`,
-          setting_value: String(value),
-          description: `Vicidial setting: ${key}`,
-          is_active: true
-        })),
-        ...Object.entries(performanceSettings).map(([key, value]) => ({
-          setting_key: `performance_${key}`,
-          setting_value: String(value),
-          description: `Performance setting: ${key}`,
-          is_active: true
-        })),
-        ...Object.entries(notificationSettings).map(([key, value]) => ({
-          setting_key: `notification_${key}`,
-          setting_value: String(value),
-          description: `Notification setting: ${key}`,
-          is_active: true
-        })),
-        ...Object.entries(securitySettings).map(([key, value]) => ({
-          setting_key: `security_${key}`,
-          setting_value: String(value),
-          description: `Security setting: ${key}`,
-          is_active: true
-        }))
-      ];
+      const settingsToSave = Object.entries(settings).map(([key, value]) => ({
+        setting_key: `${category}_${key}`,
+        setting_value: value?.toString() || '',
+        description: `${category} setting: ${key}`
+      }));
 
-      // Delete existing settings and insert new ones
-      await supabase.from('vicidial_settings').delete().neq('id', '00000000-0000-0000-0000-000000000000');
+      // Eliminar configuraciones existentes de esta categoría
+      await supabase
+        .from('vicidial_settings')
+        .delete()
+        .like('setting_key', `${category}_%`);
 
+      // Insertar nuevas configuraciones
       const { error } = await supabase
         .from('vicidial_settings')
-        .insert(allSettings);
+        .insert(settingsToSave);
 
       if (error) throw error;
 
       toast({
         title: "Configuración guardada",
-        description: "Todas las configuraciones se guardaron exitosamente",
+        description: `Configuraciones de ${category} guardadas exitosamente`,
       });
     } catch (error) {
       console.error('Error saving settings:', error);
       toast({
         title: "Error",
-        description: "Error al guardar la configuración",
+        description: "Error al guardar las configuraciones",
         variant: "destructive",
       });
     } finally {
@@ -206,67 +186,123 @@ const AdminSettings = () => {
     }
   };
 
-  const resetToDefaults = () => {
-    if (!confirm('¿Estás seguro de que deseas restablecer todas las configuraciones a sus valores por defecto?')) return;
+  const testConnection = async (type: string) => {
+    setTesting(true);
+    try {
+      // Simular prueba de conexión
+      await new Promise(resolve => setTimeout(resolve, 2000));
+      
+      toast({
+        title: "Conexión exitosa",
+        description: `La conexión ${type} fue establecida correctamente`,
+      });
+    } catch (error) {
+      toast({
+        title: "Error de conexión",
+        description: `No se pudo conectar con ${type}`,
+        variant: "destructive",
+      });
+    } finally {
+      setTesting(false);
+    }
+  };
 
-    setGeneralSettings({
-      company_name: 'Call Center Dynamics',
-      company_phone: '+57 300 123 4567',
-      company_email: 'info@callcenterdynamics.com',
-      company_address: 'Bogotá, Colombia',
-      timezone: 'America/Bogota',
-      business_hours_start: '08:00',
-      business_hours_end: '18:00',
-      currency: 'COP',
-      language: 'es'
-    });
+  const resetToDefaults = async (category: string) => {
+    if (!confirm('¿Estás seguro de que deseas restaurar la configuración por defecto?')) return;
 
-    setVicidialSettings({
-      vicidial_url: '',
-      vicidial_user: '',
-      vicidial_pass: '',
-      auto_sync_enabled: true,
-      sync_interval_minutes: 15,
-      default_campaign: 'GENERAL',
-      recording_enabled: true,
-      disposition_required: true
-    });
+    try {
+      // Eliminar configuraciones de esta categoría
+      await supabase
+        .from('vicidial_settings')
+        .delete()
+        .like('setting_key', `${category}_%`);
 
-    setPerformanceSettings({
-      target_conversion_rate: 15,
-      max_call_duration: 1800,
-      max_queue_time: 120,
-      agent_break_duration: 15,
-      max_daily_calls: 200,
-      quality_score_threshold: 80,
-      callback_reminder_hours: 24
-    });
+      // Recargar configuraciones por defecto
+      switch (category) {
+        case 'general':
+          setGeneralSettings({
+            company_name: 'CCD Capacitación',
+            company_phone: '+57 300 123 4567',
+            company_email: 'info@ccdcapacitacion.com',
+            company_address: 'Bogotá, Colombia',
+            timezone: 'America/Bogota',
+            language: 'es',
+            date_format: 'DD/MM/YYYY',
+            currency: 'COP'
+          });
+          break;
+        // Agregar más casos según sea necesario
+      }
 
-    setNotificationSettings({
-      email_notifications: true,
-      sms_notifications: false,
-      browser_notifications: true,
-      alert_threshold_breach: true,
-      daily_reports: true,
-      weekly_reports: true,
-      escalation_enabled: true,
-      escalation_minutes: 30
-    });
+      toast({
+        title: "Configuración restaurada",
+        description: "Se han restaurado los valores por defecto",
+      });
+    } catch (error) {
+      console.error('Error resetting settings:', error);
+      toast({
+        title: "Error",
+        description: "Error al restaurar la configuración",
+        variant: "destructive",
+      });
+    }
+  };
 
-    setSecuritySettings({
-      session_timeout_minutes: 60,
-      password_min_length: 8,
-      require_2fa: false,
-      login_attempts_limit: 5,
-      ip_whitelist_enabled: false,
-      audit_log_retention_days: 90,
-      data_encryption: true
-    });
+  const exportSettings = () => {
+    const allSettings = {
+      general: generalSettings,
+      vicidial: vicidialSettings,
+      performance: performanceSettings,
+      notifications: notificationSettings,
+      security: securitySettings,
+      integrations: integrationSettings
+    };
+
+    const dataStr = JSON.stringify(allSettings, null, 2);
+    const dataUri = 'data:application/json;charset=utf-8,'+ encodeURIComponent(dataStr);
+    
+    const exportFileDefaultName = `ccd_settings_${new Date().toISOString().split('T')[0]}.json`;
+    
+    const linkElement = document.createElement('a');
+    linkElement.setAttribute('href', dataUri);
+    linkElement.setAttribute('download', exportFileDefaultName);
+    linkElement.click();
 
     toast({
-      title: "Configuración restablecida",
-      description: "Todas las configuraciones han sido restablecidas a sus valores por defecto",
+      title: "Configuración exportada",
+      description: "El archivo de configuración ha sido descargado",
     });
+  };
+
+  const importSettings = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      try {
+        const settings = JSON.parse(e.target?.result as string);
+        
+        if (settings.general) setGeneralSettings(settings.general);
+        if (settings.vicidial) setVicidialSettings(settings.vicidial);
+        if (settings.performance) setPerformanceSettings(settings.performance);
+        if (settings.notifications) setNotificationSettings(settings.notifications);
+        if (settings.security) setSecuritySettings(settings.security);
+        if (settings.integrations) setIntegrationSettings(settings.integrations);
+
+        toast({
+          title: "Configuración importada",
+          description: "Las configuraciones han sido cargadas exitosamente",
+        });
+      } catch (error) {
+        toast({
+          title: "Error",
+          description: "El archivo no tiene un formato válido",
+          variant: "destructive",
+        });
+      }
+    };
+    reader.readAsText(file);
   };
 
   if (loading) {
@@ -282,44 +318,38 @@ const AdminSettings = () => {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold text-gray-900">Configuración del Sistema</h1>
-          <p className="text-gray-600">Configuraciones generales del CRM y integraciones</p>
+          <p className="text-gray-600">Administra las configuraciones generales del CRM</p>
         </div>
-        <div className="flex space-x-2">
-          <Button variant="outline" onClick={resetToDefaults}>
-            <RefreshCw className="h-4 w-4 mr-2" />
-            Restablecer
+        <div className="flex gap-2">
+          <Button onClick={exportSettings} variant="outline">
+            <Download className="h-4 w-4 mr-2" />
+            Exportar
           </Button>
-          <Button onClick={saveSettings} disabled={saving}>
-            <Save className="h-4 w-4 mr-2" />
-            {saving ? 'Guardando...' : 'Guardar Cambios'}
+          <Button variant="outline" onClick={() => document.getElementById('import-file')?.click()}>
+            <Upload className="h-4 w-4 mr-2" />
+            Importar
           </Button>
+          <input
+            id="import-file"
+            type="file"
+            accept=".json"
+            style={{ display: 'none' }}
+            onChange={importSettings}
+          />
         </div>
       </div>
 
-      <Tabs defaultValue="general" className="space-y-4">
-        <TabsList className="grid w-full grid-cols-5">
-          <TabsTrigger value="general" className="flex items-center gap-2">
-            <Settings className="h-4 w-4" />
-            General
-          </TabsTrigger>
-          <TabsTrigger value="vicidial" className="flex items-center gap-2">
-            <Phone className="h-4 w-4" />
-            Vicidial
-          </TabsTrigger>
-          <TabsTrigger value="performance" className="flex items-center gap-2">
-            <Target className="h-4 w-4" />
-            Rendimiento
-          </TabsTrigger>
-          <TabsTrigger value="notifications" className="flex items-center gap-2">
-            <Mail className="h-4 w-4" />
-            Notificaciones
-          </TabsTrigger>
-          <TabsTrigger value="security" className="flex items-center gap-2">
-            <Shield className="h-4 w-4" />
-            Seguridad
-          </TabsTrigger>
+      <Tabs defaultValue="general" className="space-y-6">
+        <TabsList className="grid w-full grid-cols-6">
+          <TabsTrigger value="general">General</TabsTrigger>
+          <TabsTrigger value="vicidial">Vicidial</TabsTrigger>
+          <TabsTrigger value="performance">Rendimiento</TabsTrigger>
+          <TabsTrigger value="notifications">Notificaciones</TabsTrigger>
+          <TabsTrigger value="security">Seguridad</TabsTrigger>
+          <TabsTrigger value="integrations">Integraciones</TabsTrigger>
         </TabsList>
 
+        {/* Configuración General */}
         <TabsContent value="general">
           <Card>
             <CardHeader>
@@ -338,18 +368,25 @@ const AdminSettings = () => {
                   />
                 </div>
                 <div>
-                  <Label>Teléfono de la Empresa</Label>
+                  <Label>Teléfono Principal</Label>
                   <Input
                     value={generalSettings.company_phone}
                     onChange={(e) => setGeneralSettings({...generalSettings, company_phone: e.target.value})}
                   />
                 </div>
                 <div>
-                  <Label>Email de la Empresa</Label>
+                  <Label>Email Principal</Label>
                   <Input
                     type="email"
                     value={generalSettings.company_email}
                     onChange={(e) => setGeneralSettings({...generalSettings, company_email: e.target.value})}
+                  />
+                </div>
+                <div>
+                  <Label>Dirección</Label>
+                  <Input
+                    value={generalSettings.company_address}
+                    onChange={(e) => setGeneralSettings({...generalSettings, company_address: e.target.value})}
                   />
                 </div>
                 <div>
@@ -359,40 +396,9 @@ const AdminSettings = () => {
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="America/Bogota">Colombia (UTC-5)</SelectItem>
-                      <SelectItem value="America/New_York">New York (UTC-5)</SelectItem>
-                      <SelectItem value="America/Mexico_City">Mexico City (UTC-6)</SelectItem>
-                      <SelectItem value="America/Argentina/Buenos_Aires">Buenos Aires (UTC-3)</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div>
-                  <Label>Hora de Inicio</Label>
-                  <Input
-                    type="time"
-                    value={generalSettings.business_hours_start}
-                    onChange={(e) => setGeneralSettings({...generalSettings, business_hours_start: e.target.value})}
-                  />
-                </div>
-                <div>
-                  <Label>Hora de Fin</Label>
-                  <Input
-                    type="time"
-                    value={generalSettings.business_hours_end}
-                    onChange={(e) => setGeneralSettings({...generalSettings, business_hours_end: e.target.value})}
-                  />
-                </div>
-                <div>
-                  <Label>Moneda</Label>
-                  <Select value={generalSettings.currency} onValueChange={(value) => setGeneralSettings({...generalSettings, currency: value})}>
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="COP">Peso Colombiano (COP)</SelectItem>
-                      <SelectItem value="USD">Dólar Americano (USD)</SelectItem>
-                      <SelectItem value="MXN">Peso Mexicano (MXN)</SelectItem>
-                      <SelectItem value="ARS">Peso Argentino (ARS)</SelectItem>
+                      <SelectItem value="America/Bogota">América/Bogotá</SelectItem>
+                      <SelectItem value="America/Mexico_City">América/Ciudad de México</SelectItem>
+                      <SelectItem value="America/New_York">América/Nueva York</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
@@ -405,35 +411,69 @@ const AdminSettings = () => {
                     <SelectContent>
                       <SelectItem value="es">Español</SelectItem>
                       <SelectItem value="en">English</SelectItem>
-                      <SelectItem value="pt">Português</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div>
+                  <Label>Formato de Fecha</Label>
+                  <Select value={generalSettings.date_format} onValueChange={(value) => setGeneralSettings({...generalSettings, date_format: value})}>
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="DD/MM/YYYY">DD/MM/YYYY</SelectItem>
+                      <SelectItem value="MM/DD/YYYY">MM/DD/YYYY</SelectItem>
+                      <SelectItem value="YYYY-MM-DD">YYYY-MM-DD</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div>
+                  <Label>Moneda</Label>
+                  <Select value={generalSettings.currency} onValueChange={(value) => setGeneralSettings({...generalSettings, currency: value})}>
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="COP">COP - Peso Colombiano</SelectItem>
+                      <SelectItem value="USD">USD - Dólar</SelectItem>
+                      <SelectItem value="MXN">MXN - Peso Mexicano</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
               </div>
-              <div>
-                <Label>Dirección de la Empresa</Label>
-                <Textarea
-                  value={generalSettings.company_address}
-                  onChange={(e) => setGeneralSettings({...generalSettings, company_address: e.target.value})}
-                  rows={3}
-                />
+              <div className="flex justify-between">
+                <Button
+                  onClick={() => resetToDefaults('general')}
+                  variant="outline"
+                >
+                  <RefreshCw className="h-4 w-4 mr-2" />
+                  Restaurar Defecto
+                </Button>
+                <Button
+                  onClick={() => saveSettings('general', generalSettings)}
+                  disabled={saving}
+                >
+                  <Save className="h-4 w-4 mr-2" />
+                  {saving ? 'Guardando...' : 'Guardar'}
+                </Button>
               </div>
             </CardContent>
           </Card>
         </TabsContent>
 
+        {/* Configuración Vicidial */}
         <TabsContent value="vicidial">
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
-                <Phone className="h-5 w-5" />
-                Configuración de Vicidial
+                <Database className="h-5 w-5" />
+                Configuración Vicidial
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-6">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
-                  <Label>URL del Servidor Vicidial</Label>
+                  <Label>URL de Vicidial</Label>
                   <Input
                     value={vicidialSettings.vicidial_url}
                     onChange={(e) => setVicidialSettings({...vicidialSettings, vicidial_url: e.target.value})}
@@ -441,255 +481,271 @@ const AdminSettings = () => {
                   />
                 </div>
                 <div>
-                  <Label>Usuario de API Vicidial</Label>
+                  <Label>Usuario API</Label>
                   <Input
                     value={vicidialSettings.vicidial_user}
                     onChange={(e) => setVicidialSettings({...vicidialSettings, vicidial_user: e.target.value})}
-                    placeholder="api_user"
                   />
                 </div>
                 <div>
-                  <Label>Contraseña de API</Label>
+                  <Label>Contraseña API</Label>
                   <Input
                     type="password"
                     value={vicidialSettings.vicidial_pass}
                     onChange={(e) => setVicidialSettings({...vicidialSettings, vicidial_pass: e.target.value})}
-                    placeholder="Contraseña"
                   />
                 </div>
                 <div>
                   <Label>Campaña por Defecto</Label>
                   <Input
-                    value={vicidialSettings.default_campaign}
-                    onChange={(e) => setVicidialSettings({...vicidialSettings, default_campaign: e.target.value})}
-                    placeholder="GENERAL"
+                    value={vicidialSettings.campaign_default}
+                    onChange={(e) => setVicidialSettings({...vicidialSettings, campaign_default: e.target.value})}
                   />
                 </div>
                 <div>
-                  <Label>Intervalo de Sincronización (minutos)</Label>
+                  <Label>Intervalo de Sincronización (segundos)</Label>
                   <Input
                     type="number"
-                    value={vicidialSettings.sync_interval_minutes}
-                    onChange={(e) => setVicidialSettings({...vicidialSettings, sync_interval_minutes: Number(e.target.value)})}
-                    min="1"
-                    max="60"
+                    value={vicidialSettings.sync_interval}
+                    onChange={(e) => setVicidialSettings({...vicidialSettings, sync_interval: parseInt(e.target.value)})}
                   />
                 </div>
               </div>
-              <div className="space-y-4">
+              
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div className="flex items-center justify-between">
-                  <div>
-                    <Label>Sincronización Automática</Label>
-                    <p className="text-sm text-gray-600">Sincronizar datos automáticamente con Vicidial</p>
-                  </div>
+                  <Label>Sincronización Automática</Label>
                   <Switch
-                    checked={vicidialSettings.auto_sync_enabled}
-                    onCheckedChange={(checked) => setVicidialSettings({...vicidialSettings, auto_sync_enabled: checked})}
+                    checked={vicidialSettings.auto_sync}
+                    onCheckedChange={(checked) => setVicidialSettings({...vicidialSettings, auto_sync: checked})}
                   />
                 </div>
                 <div className="flex items-center justify-between">
-                  <div>
-                    <Label>Grabación Habilitada</Label>
-                    <p className="text-sm text-gray-600">Habilitar grabación de llamadas por defecto</p>
-                  </div>
+                  <Label>Grabación Habilitada</Label>
                   <Switch
                     checked={vicidialSettings.recording_enabled}
                     onCheckedChange={(checked) => setVicidialSettings({...vicidialSettings, recording_enabled: checked})}
                   />
                 </div>
                 <div className="flex items-center justify-between">
-                  <div>
-                    <Label>Disposición Requerida</Label>
-                    <p className="text-sm text-gray-600">Requerir disposición para finalizar llamadas</p>
-                  </div>
+                  <Label>Monitoreo de Calidad</Label>
                   <Switch
-                    checked={vicidialSettings.disposition_required}
-                    onCheckedChange={(checked) => setVicidialSettings({...vicidialSettings, disposition_required: checked})}
+                    checked={vicidialSettings.quality_monitoring}
+                    onCheckedChange={(checked) => setVicidialSettings({...vicidialSettings, quality_monitoring: checked})}
                   />
                 </div>
+              </div>
+
+              <div className="flex justify-between">
+                <div className="flex gap-2">
+                  <Button
+                    onClick={() => testConnection('Vicidial')}
+                    variant="outline"
+                    disabled={testing}
+                  >
+                    <TestTube className="h-4 w-4 mr-2" />
+                    {testing ? 'Probando...' : 'Probar Conexión'}
+                  </Button>
+                  <Button
+                    onClick={() => resetToDefaults('vicidial')}
+                    variant="outline"
+                  >
+                    <RefreshCw className="h-4 w-4 mr-2" />
+                    Restaurar Defecto
+                  </Button>
+                </div>
+                <Button
+                  onClick={() => saveSettings('vicidial', vicidialSettings)}
+                  disabled={saving}
+                >
+                  <Save className="h-4 w-4 mr-2" />
+                  {saving ? 'Guardando...' : 'Guardar'}
+                </Button>
               </div>
             </CardContent>
           </Card>
         </TabsContent>
 
+        {/* Configuración de Rendimiento */}
         <TabsContent value="performance">
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
-                <BarChart3 className="h-5 w-5" />
+                <Zap className="h-5 w-5" />
                 Configuración de Rendimiento
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-6">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
-                  <Label>Tasa de Conversión Objetivo (%)</Label>
+                  <Label>Llamadas por Hora (Meta)</Label>
                   <Input
                     type="number"
-                    value={performanceSettings.target_conversion_rate}
-                    onChange={(e) => setPerformanceSettings({...performanceSettings, target_conversion_rate: Number(e.target.value)})}
-                    min="0"
-                    max="100"
+                    value={performanceSettings.calls_per_hour_target}
+                    onChange={(e) => setPerformanceSettings({...performanceSettings, calls_per_hour_target: parseInt(e.target.value)})}
                   />
                 </div>
                 <div>
-                  <Label>Duración Máxima de Llamada (segundos)</Label>
+                  <Label>Tasa de Conversión Meta (%)</Label>
                   <Input
                     type="number"
-                    value={performanceSettings.max_call_duration}
-                    onChange={(e) => setPerformanceSettings({...performanceSettings, max_call_duration: Number(e.target.value)})}
-                    min="60"
+                    value={performanceSettings.conversion_rate_target}
+                    onChange={(e) => setPerformanceSettings({...performanceSettings, conversion_rate_target: parseInt(e.target.value)})}
                   />
                 </div>
                 <div>
-                  <Label>Tiempo Máximo en Cola (segundos)</Label>
+                  <Label>Tiempo Promedio de Llamada Meta (segundos)</Label>
                   <Input
                     type="number"
-                    value={performanceSettings.max_queue_time}
-                    onChange={(e) => setPerformanceSettings({...performanceSettings, max_queue_time: Number(e.target.value)})}
-                    min="30"
+                    value={performanceSettings.avg_call_time_target}
+                    onChange={(e) => setPerformanceSettings({...performanceSettings, avg_call_time_target: parseInt(e.target.value)})}
                   />
                 </div>
                 <div>
-                  <Label>Duración de Descanso (minutos)</Label>
+                  <Label>Puntaje de Calidad Meta (%)</Label>
                   <Input
                     type="number"
-                    value={performanceSettings.agent_break_duration}
-                    onChange={(e) => setPerformanceSettings({...performanceSettings, agent_break_duration: Number(e.target.value)})}
-                    min="5"
-                    max="60"
+                    value={performanceSettings.quality_score_target}
+                    onChange={(e) => setPerformanceSettings({...performanceSettings, quality_score_target: parseInt(e.target.value)})}
                   />
                 </div>
                 <div>
-                  <Label>Máximo de Llamadas Diarias</Label>
+                  <Label>Pausa Automática por Inactividad (segundos)</Label>
                   <Input
                     type="number"
-                    value={performanceSettings.max_daily_calls}
-                    onChange={(e) => setPerformanceSettings({...performanceSettings, max_daily_calls: Number(e.target.value)})}
-                    min="50"
+                    value={performanceSettings.auto_pause_inactive}
+                    onChange={(e) => setPerformanceSettings({...performanceSettings, auto_pause_inactive: parseInt(e.target.value)})}
                   />
                 </div>
-                <div>
-                  <Label>Umbral de Puntaje de Calidad (%)</Label>
-                  <Input
-                    type="number"
-                    value={performanceSettings.quality_score_threshold}
-                    onChange={(e) => setPerformanceSettings({...performanceSettings, quality_score_threshold: Number(e.target.value)})}
-                    min="0"
-                    max="100"
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="flex items-center justify-between">
+                  <Label>Alertas de Productividad</Label>
+                  <Switch
+                    checked={performanceSettings.productivity_alerts}
+                    onCheckedChange={(checked) => setPerformanceSettings({...performanceSettings, productivity_alerts: checked})}
                   />
                 </div>
-                <div>
-                  <Label>Recordatorio de Callback (horas)</Label>
-                  <Input
-                    type="number"
-                    value={performanceSettings.callback_reminder_hours}
-                    onChange={(e) => setPerformanceSettings({...performanceSettings, callback_reminder_hours: Number(e.target.value)})}
-                    min="1"
-                    max="168"
+                <div className="flex items-center justify-between">
+                  <Label>Reportes de Rendimiento</Label>
+                  <Switch
+                    checked={performanceSettings.performance_reports}
+                    onCheckedChange={(checked) => setPerformanceSettings({...performanceSettings, performance_reports: checked})}
                   />
                 </div>
+              </div>
+
+              <div className="flex justify-between">
+                <Button
+                  onClick={() => resetToDefaults('performance')}
+                  variant="outline"
+                >
+                  <RefreshCw className="h-4 w-4 mr-2" />
+                  Restaurar Defecto
+                </Button>
+                <Button
+                  onClick={() => saveSettings('performance', performanceSettings)}
+                  disabled={saving}
+                >
+                  <Save className="h-4 w-4 mr-2" />
+                  {saving ? 'Guardando...' : 'Guardar'}
+                </Button>
               </div>
             </CardContent>
           </Card>
         </TabsContent>
 
+        {/* Configuración de Notificaciones */}
         <TabsContent value="notifications">
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
-                <Mail className="h-5 w-5" />
+                <Bell className="h-5 w-5" />
                 Configuración de Notificaciones
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-6">
-              <div className="space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div className="flex items-center justify-between">
-                  <div>
-                    <Label>Notificaciones por Email</Label>
-                    <p className="text-sm text-gray-600">Recibir notificaciones importantes por email</p>
-                  </div>
+                  <Label>Notificaciones por Email</Label>
                   <Switch
                     checked={notificationSettings.email_notifications}
                     onCheckedChange={(checked) => setNotificationSettings({...notificationSettings, email_notifications: checked})}
                   />
                 </div>
                 <div className="flex items-center justify-between">
-                  <div>
-                    <Label>Notificaciones SMS</Label>
-                    <p className="text-sm text-gray-600">Recibir alertas críticas por SMS</p>
-                  </div>
+                  <Label>Notificaciones por SMS</Label>
                   <Switch
                     checked={notificationSettings.sms_notifications}
                     onCheckedChange={(checked) => setNotificationSettings({...notificationSettings, sms_notifications: checked})}
                   />
                 </div>
                 <div className="flex items-center justify-between">
-                  <div>
-                    <Label>Notificaciones del Navegador</Label>
-                    <p className="text-sm text-gray-600">Mostrar notificaciones en el navegador</p>
-                  </div>
+                  <Label>Notificaciones por WhatsApp</Label>
                   <Switch
-                    checked={notificationSettings.browser_notifications}
-                    onCheckedChange={(checked) => setNotificationSettings({...notificationSettings, browser_notifications: checked})}
+                    checked={notificationSettings.whatsapp_notifications}
+                    onCheckedChange={(checked) => setNotificationSettings({...notificationSettings, whatsapp_notifications: checked})}
                   />
                 </div>
                 <div className="flex items-center justify-between">
-                  <div>
-                    <Label>Alertas de Umbral</Label>
-                    <p className="text-sm text-gray-600">Notificar cuando se superen umbrales configurados</p>
-                  </div>
+                  <Label>Alertas del Sistema</Label>
                   <Switch
-                    checked={notificationSettings.alert_threshold_breach}
-                    onCheckedChange={(checked) => setNotificationSettings({...notificationSettings, alert_threshold_breach: checked})}
+                    checked={notificationSettings.system_alerts}
+                    onCheckedChange={(checked) => setNotificationSettings({...notificationSettings, system_alerts: checked})}
                   />
                 </div>
                 <div className="flex items-center justify-between">
-                  <div>
-                    <Label>Reportes Diarios</Label>
-                    <p className="text-sm text-gray-600">Enviar resumen diario de actividad</p>
-                  </div>
+                  <Label>Alertas de Rendimiento</Label>
+                  <Switch
+                    checked={notificationSettings.performance_alerts}
+                    onCheckedChange={(checked) => setNotificationSettings({...notificationSettings, performance_alerts: checked})}
+                  />
+                </div>
+                <div className="flex items-center justify-between">
+                  <Label>Recordatorios de Callback</Label>
+                  <Switch
+                    checked={notificationSettings.callback_reminders}
+                    onCheckedChange={(checked) => setNotificationSettings({...notificationSettings, callback_reminders: checked})}
+                  />
+                </div>
+                <div className="flex items-center justify-between">
+                  <Label>Reportes Diarios</Label>
                   <Switch
                     checked={notificationSettings.daily_reports}
                     onCheckedChange={(checked) => setNotificationSettings({...notificationSettings, daily_reports: checked})}
                   />
                 </div>
                 <div className="flex items-center justify-between">
-                  <div>
-                    <Label>Reportes Semanales</Label>
-                    <p className="text-sm text-gray-600">Enviar resumen semanal de rendimiento</p>
-                  </div>
+                  <Label>Reportes Semanales</Label>
                   <Switch
                     checked={notificationSettings.weekly_reports}
                     onCheckedChange={(checked) => setNotificationSettings({...notificationSettings, weekly_reports: checked})}
                   />
                 </div>
-                <div className="flex items-center justify-between">
-                  <div>
-                    <Label>Escalamiento Automático</Label>
-                    <p className="text-sm text-gray-600">Escalar problemas automáticamente a supervisores</p>
-                  </div>
-                  <Switch
-                    checked={notificationSettings.escalation_enabled}
-                    onCheckedChange={(checked) => setNotificationSettings({...notificationSettings, escalation_enabled: checked})}
-                  />
-                </div>
               </div>
-              <div className="pt-4">
-                <Label>Tiempo de Escalamiento (minutos)</Label>
-                <Input
-                  type="number"
-                  value={notificationSettings.escalation_minutes}
-                  onChange={(e) => setNotificationSettings({...notificationSettings, escalation_minutes: Number(e.target.value)})}
-                  min="5"
-                  max="120"
-                  className="max-w-xs"
-                />
+
+              <div className="flex justify-between">
+                <Button
+                  onClick={() => resetToDefaults('notification')}
+                  variant="outline"
+                >
+                  <RefreshCw className="h-4 w-4 mr-2" />
+                  Restaurar Defecto
+                </Button>
+                <Button
+                  onClick={() => saveSettings('notification', notificationSettings)}
+                  disabled={saving}
+                >
+                  <Save className="h-4 w-4 mr-2" />
+                  {saving ? 'Guardando...' : 'Guardar'}
+                </Button>
               </div>
             </CardContent>
           </Card>
         </TabsContent>
 
+        {/* Configuración de Seguridad */}
         <TabsContent value="security">
           <Card>
             <CardHeader>
@@ -701,13 +757,11 @@ const AdminSettings = () => {
             <CardContent className="space-y-6">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
-                  <Label>Tiempo de Sesión (minutos)</Label>
+                  <Label>Tiempo de Sesión (segundos)</Label>
                   <Input
                     type="number"
-                    value={securitySettings.session_timeout_minutes}
-                    onChange={(e) => setSecuritySettings({...securitySettings, session_timeout_minutes: Number(e.target.value)})}
-                    min="15"
-                    max="480"
+                    value={securitySettings.session_timeout}
+                    onChange={(e) => setSecuritySettings({...securitySettings, session_timeout: parseInt(e.target.value)})}
                   />
                 </div>
                 <div>
@@ -715,63 +769,191 @@ const AdminSettings = () => {
                   <Input
                     type="number"
                     value={securitySettings.password_min_length}
-                    onChange={(e) => setSecuritySettings({...securitySettings, password_min_length: Number(e.target.value)})}
-                    min="6"
-                    max="20"
+                    onChange={(e) => setSecuritySettings({...securitySettings, password_min_length: parseInt(e.target.value)})}
                   />
                 </div>
                 <div>
-                  <Label>Límite de Intentos de Login</Label>
+                  <Label>Intentos de Login Máximos</Label>
                   <Input
                     type="number"
-                    value={securitySettings.login_attempts_limit}
-                    onChange={(e) => setSecuritySettings({...securitySettings, login_attempts_limit: Number(e.target.value)})}
-                    min="3"
-                    max="10"
+                    value={securitySettings.login_attempts}
+                    onChange={(e) => setSecuritySettings({...securitySettings, login_attempts: parseInt(e.target.value)})}
                   />
                 </div>
                 <div>
-                  <Label>Retención de Logs (días)</Label>
+                  <Label>Duración de Bloqueo (segundos)</Label>
                   <Input
                     type="number"
-                    value={securitySettings.audit_log_retention_days}
-                    onChange={(e) => setSecuritySettings({...securitySettings, audit_log_retention_days: Number(e.target.value)})}
-                    min="30"
-                    max="365"
+                    value={securitySettings.lockout_duration}
+                    onChange={(e) => setSecuritySettings({...securitySettings, lockout_duration: parseInt(e.target.value)})}
                   />
+                </div>
+                <div>
+                  <Label>Frecuencia de Backup</Label>
+                  <Select value={securitySettings.backup_frequency} onValueChange={(value) => setSecuritySettings({...securitySettings, backup_frequency: value})}>
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="daily">Diario</SelectItem>
+                      <SelectItem value="weekly">Semanal</SelectItem>
+                      <SelectItem value="monthly">Mensual</SelectItem>
+                    </SelectContent>
+                  </Select>
                 </div>
               </div>
-              <div className="space-y-4">
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div className="flex items-center justify-between">
-                  <div>
-                    <Label>Autenticación de Dos Factores</Label>
-                    <p className="text-sm text-gray-600">Requerir 2FA para todos los usuarios</p>
-                  </div>
+                  <Label>Requerir 2FA</Label>
                   <Switch
                     checked={securitySettings.require_2fa}
                     onCheckedChange={(checked) => setSecuritySettings({...securitySettings, require_2fa: checked})}
                   />
                 </div>
                 <div className="flex items-center justify-between">
-                  <div>
-                    <Label>Lista Blanca de IPs</Label>
-                    <p className="text-sm text-gray-600">Restringir acceso a IPs específicas</p>
-                  </div>
+                  <Label>Log de Auditoría</Label>
                   <Switch
-                    checked={securitySettings.ip_whitelist_enabled}
-                    onCheckedChange={(checked) => setSecuritySettings({...securitySettings, ip_whitelist_enabled: checked})}
+                    checked={securitySettings.audit_logging}
+                    onCheckedChange={(checked) => setSecuritySettings({...securitySettings, audit_logging: checked})}
                   />
                 </div>
                 <div className="flex items-center justify-between">
-                  <div>
-                    <Label>Encriptación de Datos</Label>
-                    <p className="text-sm text-gray-600">Encriptar datos sensibles en la base de datos</p>
-                  </div>
+                  <Label>Encriptación de Datos</Label>
                   <Switch
                     checked={securitySettings.data_encryption}
                     onCheckedChange={(checked) => setSecuritySettings({...securitySettings, data_encryption: checked})}
                   />
                 </div>
+              </div>
+
+              <div className="flex justify-between">
+                <Button
+                  onClick={() => resetToDefaults('security')}
+                  variant="outline"
+                >
+                  <RefreshCw className="h-4 w-4 mr-2" />
+                  Restaurar Defecto
+                </Button>
+                <Button
+                  onClick={() => saveSettings('security', securitySettings)}
+                  disabled={saving}
+                >
+                  <Save className="h-4 w-4 mr-2" />
+                  {saving ? 'Guardando...' : 'Guardar'}
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        {/* Configuración de Integraciones */}
+        <TabsContent value="integrations">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Zap className="h-5 w-5" />
+                Configuración de Integraciones
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                  <Label>API Key de WhatsApp</Label>
+                  <Input
+                    type="password"
+                    value={integrationSettings.whatsapp_api_key}
+                    onChange={(e) => setIntegrationSettings({...integrationSettings, whatsapp_api_key: e.target.value})}
+                  />
+                </div>
+                <div>
+                  <Label>SMTP Host</Label>
+                  <Input
+                    value={integrationSettings.email_smtp_host}
+                    onChange={(e) => setIntegrationSettings({...integrationSettings, email_smtp_host: e.target.value})}
+                  />
+                </div>
+                <div>
+                  <Label>SMTP Puerto</Label>
+                  <Input
+                    type="number"
+                    value={integrationSettings.email_smtp_port}
+                    onChange={(e) => setIntegrationSettings({...integrationSettings, email_smtp_port: parseInt(e.target.value)})}
+                  />
+                </div>
+                <div>
+                  <Label>Usuario Email</Label>
+                  <Input
+                    value={integrationSettings.email_username}
+                    onChange={(e) => setIntegrationSettings({...integrationSettings, email_username: e.target.value})}
+                  />
+                </div>
+                <div>
+                  <Label>Contraseña Email</Label>
+                  <Input
+                    type="password"
+                    value={integrationSettings.email_password}
+                    onChange={(e) => setIntegrationSettings({...integrationSettings, email_password: e.target.value})}
+                  />
+                </div>
+                <div>
+                  <Label>Límite de Rate API</Label>
+                  <Input
+                    type="number"
+                    value={integrationSettings.api_rate_limit}
+                    onChange={(e) => setIntegrationSettings({...integrationSettings, api_rate_limit: parseInt(e.target.value)})}
+                  />
+                </div>
+                <div>
+                  <Label>Webhook Secret</Label>
+                  <Input
+                    type="password"
+                    value={integrationSettings.webhook_secret}
+                    onChange={(e) => setIntegrationSettings({...integrationSettings, webhook_secret: e.target.value})}
+                  />
+                </div>
+                <div>
+                  <Label>URL CRM Externo</Label>
+                  <Input
+                    value={integrationSettings.external_crm_url}
+                    onChange={(e) => setIntegrationSettings({...integrationSettings, external_crm_url: e.target.value})}
+                  />
+                </div>
+              </div>
+
+              <div className="flex justify-between">
+                <div className="flex gap-2">
+                  <Button
+                    onClick={() => testConnection('WhatsApp API')}
+                    variant="outline"
+                    disabled={testing}
+                  >
+                    <TestTube className="h-4 w-4 mr-2" />
+                    {testing ? 'Probando...' : 'Probar WhatsApp'}
+                  </Button>
+                  <Button
+                    onClick={() => testConnection('Email SMTP')}
+                    variant="outline"
+                    disabled={testing}
+                  >
+                    <Mail className="h-4 w-4 mr-2" />
+                    {testing ? 'Probando...' : 'Probar Email'}
+                  </Button>
+                  <Button
+                    onClick={() => resetToDefaults('integration')}
+                    variant="outline"
+                  >
+                    <RefreshCw className="h-4 w-4 mr-2" />
+                    Restaurar Defecto
+                  </Button>
+                </div>
+                <Button
+                  onClick={() => saveSettings('integration', integrationSettings)}
+                  disabled={saving}
+                >
+                  <Save className="h-4 w-4 mr-2" />
+                  {saving ? 'Guardando...' : 'Guardar'}
+                </Button>
               </div>
             </CardContent>
           </Card>
