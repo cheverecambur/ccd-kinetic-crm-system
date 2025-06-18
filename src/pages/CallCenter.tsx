@@ -15,7 +15,7 @@ import {
   Settings,
   BarChart3
 } from 'lucide-react';
-import { useVicidial } from '@/hooks/useVicidial';
+import { useVicidialReal } from '@/hooks/useVicidialReal';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
 import ManualDialer from '@/components/ManualDialer';
@@ -41,8 +41,12 @@ const CallCenter = () => {
     isStartingCall,
     isEndingCall,
     isPausingCall,
-    formatCallDuration
-  } = useVicidial();
+    formatCallDuration,
+    checkVicidialConnection,
+    startRecording,
+    stopRecording,
+    transferCall
+  } = useVicidialReal();
 
   const [showDispositionModal, setShowDispositionModal] = useState(false);
   const [showNewLeadModal, setShowNewLeadModal] = useState(false);
@@ -95,6 +99,11 @@ const CallCenter = () => {
     }
   ];
 
+  // Verificar conexión al cargar
+  useEffect(() => {
+    checkVicidialConnection();
+  }, [checkVicidialConnection]);
+
   // Manejar inicio de llamada manual
   const handleStartManualCall = (phoneNumber: string, leadName?: string, leadId?: string) => {
     const cleanPhoneNumber = phoneNumber.replace(/\D/g, '');
@@ -130,7 +139,7 @@ const CallCenter = () => {
 
   // Handlers para controles adicionales
   const handleMute = () => {
-    console.log('Muting call');
+    console.log('Silenciar micrófono - función a implementar');
     toast({
       title: "Micrófono",
       description: "Estado del micrófono cambiado",
@@ -138,18 +147,40 @@ const CallCenter = () => {
   };
 
   const handleHold = () => {
-    console.log('Putting call on hold');
+    console.log('Poner en espera - función a implementar');
     toast({
       title: "Llamada en espera",
       description: "Llamada puesta en espera",
     });
   };
 
+  // Manejar grabación
+  const handleRecording = () => {
+    if (callSession.isRecording) {
+      stopRecording();
+    } else {
+      startRecording();
+    }
+  };
+
+  // Manejar transferencia
+  const handleTransfer = (phoneNumber: string) => {
+    transferCall(phoneNumber);
+  };
+
   // Guardar resultado de llamada
   const handleSaveDisposition = (dispositionData: DispositionData) => {
-    console.log('Saving disposition:', dispositionData);
+    console.log('Guardando disposición:', dispositionData);
     
-    setDisposition(dispositionData);
+    setDisposition({
+      value: dispositionData.disposition,
+      callback_datetime: dispositionData.callbackDate && dispositionData.callbackTime 
+        ? `${dispositionData.callbackDate}+${dispositionData.callbackTime}:00`
+        : undefined,
+      callback_type: 'ANYONE',
+      callback_comments: dispositionData.comments
+    });
+    
     setShowDispositionModal(false);
     
     toast({
@@ -158,7 +189,7 @@ const CallCenter = () => {
     });
   };
 
-  // New callback handlers for modals
+  // Handlers para modales
   const handleLeadCreated = () => {
     toast({
       title: "Lead creado",
@@ -208,8 +239,8 @@ const CallCenter = () => {
         {/* Header */}
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-3xl font-bold text-gray-900">Call Center</h1>
-            <p className="text-gray-600">Centro de llamadas integrado con Vicidial</p>
+            <h1 className="text-3xl font-bold text-gray-900">Call Center - Vicidial Integrado</h1>
+            <p className="text-gray-600">Centro de llamadas con integración real de Vicidial</p>
           </div>
           <div className="flex items-center gap-2">
             <Badge className={isVicidialConnected ? "bg-green-500" : "bg-red-500"}>
@@ -228,6 +259,13 @@ const CallCenter = () => {
             <Badge variant="outline">
               Ext: {user?.extension || '101'}
             </Badge>
+            <Button 
+              onClick={checkVicidialConnection}
+              variant="outline" 
+              size="sm"
+            >
+              Verificar Conexión
+            </Button>
           </div>
         </div>
 
@@ -242,26 +280,26 @@ const CallCenter = () => {
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <BarChart3 className="h-5 w-5" />
-                  Métricas de Hoy - Vicidial
+                  Métricas de Hoy - Vicidial Real
                 </CardTitle>
               </CardHeader>
               <CardContent>
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                   <div className="text-center">
-                    <div className="text-2xl font-bold text-blue-600">{agentMetrics?.callsToday || 0}</div>
+                    <div className="text-2xl font-bold text-blue-600">{agentMetrics.callsToday}</div>
                     <div className="text-sm text-gray-600">Llamadas</div>
                   </div>
                   <div className="text-center">
-                    <div className="text-2xl font-bold text-green-600">{agentMetrics?.conversions || 0}</div>
+                    <div className="text-2xl font-bold text-green-600">{agentMetrics.conversions}</div>
                     <div className="text-sm text-gray-600">Conversiones</div>
                   </div>
                   <div className="text-center">
-                    <div className="text-2xl font-bold text-purple-600">{agentMetrics?.averageCallTime || '0:00'}</div>
+                    <div className="text-2xl font-bold text-purple-600">{agentMetrics.averageCallTime}</div>
                     <div className="text-sm text-gray-600">Tiempo Promedio</div>
                   </div>
                   <div className="text-center">
                     <div className="text-2xl font-bold text-orange-600">
-                      {agentMetrics ? Math.floor(agentMetrics.talkTime / 60) : 0}m
+                      {Math.floor(agentMetrics.talkTime / 60)}m
                     </div>
                     <div className="text-sm text-gray-600">Tiempo de Conversación</div>
                   </div>
@@ -280,6 +318,40 @@ const CallCenter = () => {
               isEndingCall={isEndingCall}
               isPausingCall={isPausingCall}
             />
+
+            {/* Controles adicionales de Vicidial */}
+            {callSession.isActive && (
+              <Card>
+                <CardHeader>
+                  <CardTitle>Controles Avanzados Vicidial</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="flex flex-wrap gap-2">
+                    <Button 
+                      onClick={handleRecording}
+                      variant={callSession.isRecording ? "destructive" : "default"}
+                      size="sm"
+                    >
+                      {callSession.isRecording ? 'Detener Grabación' : 'Iniciar Grabación'}
+                    </Button>
+                    <Button 
+                      onClick={() => handleTransfer('1000')}
+                      variant="outline"
+                      size="sm"
+                    >
+                      Transferir a 1000
+                    </Button>
+                    <Button 
+                      variant="outline"
+                      size="sm"
+                      disabled
+                    >
+                      Conferencia (Próximamente)
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
 
             {/* Tabs para diferentes funcionalidades */}
             <Card>
@@ -314,7 +386,7 @@ const CallCenter = () => {
                           {isStartingCall ? (
                             <div className="flex items-center">
                               <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-2"></div>
-                              Conectando...
+                              Conectando con Vicidial...
                             </div>
                           ) : (
                             <>
@@ -323,12 +395,24 @@ const CallCenter = () => {
                             </>
                           )}
                         </Button>
+                        {!isVicidialConnected && (
+                          <p className="text-red-600 text-sm">
+                            ⚠️ Conecte Vicidial para realizar llamadas
+                          </p>
+                        )}
                       </div>
                     )}
                   </TabsContent>
                   
                   <TabsContent value="manual" className="p-6">
                     <ManualDialer onCall={handleStartManualCall} />
+                    {!isVicidialConnected && (
+                      <div className="mt-4 p-3 bg-red-100 border border-red-300 rounded-lg">
+                        <p className="text-red-800 text-sm">
+                          ⚠️ Vicidial no está conectado. Revise la configuración en el archivo .env
+                        </p>
+                      </div>
+                    )}
                   </TabsContent>
                   
                   <TabsContent value="history" className="p-6">
@@ -402,6 +486,15 @@ const CallCenter = () => {
                       <label className="text-sm font-medium text-gray-600">Notas Previas</label>
                       <p className="text-sm text-gray-600">{nextScheduledLead.notes}</p>
                     </div>
+                    {callSession.isActive && (
+                      <div className="pt-2 border-t">
+                        <label className="text-sm font-medium text-gray-600">Estado de Llamada</label>
+                        <p className="font-medium text-blue-600">{callSession.status}</p>
+                        {callSession.isRecording && (
+                          <Badge className="bg-red-500 mt-1">GRABANDO</Badge>
+                        )}
+                      </div>
+                    )}
                   </>
                 ) : (
                   <p className="text-gray-500 text-center py-8">
@@ -433,16 +526,21 @@ const CallCenter = () => {
                   <Clock className="h-4 w-4 mr-2" />
                   Programar Callback
                 </Button>
-                <Button variant="outline" className="w-full justify-start">
+                <Button 
+                  variant="outline" 
+                  className="w-full justify-start"
+                  onClick={() => setShowSaleModal(true)}
+                  disabled={!callSession.isActive}
+                >
                   <Settings className="h-4 w-4 mr-2" />
-                  Configuración
+                  Registrar Venta
                 </Button>
               </CardContent>
             </Card>
           </div>
         </div>
 
-        {/* Modales con todos los props requeridos */}
+        {/* Modales */}
         <DispositionModal
           isOpen={showDispositionModal}
           onClose={() => setShowDispositionModal(false)}
@@ -477,7 +575,7 @@ const CallCenter = () => {
 
         {/* IA Assistant especializada para Call Center */}
         <AIAssistant 
-          context="Call Center - Gestión de llamadas y leads"
+          context="Call Center Vicidial - Gestión de llamadas y leads con integración real"
           initialMinimized={true}
         />
       </div>
