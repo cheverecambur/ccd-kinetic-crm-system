@@ -30,11 +30,18 @@ const AdminPanel = () => {
       color: 'bg-blue-500'
     },
     {
-      title: 'Análisis de Rendimiento',
-      description: 'KPIs y métricas de todo el equipo',
+      title: 'Analytics Avanzado',
+      description: 'KPIs y métricas detalladas con visualizaciones',
       icon: BarChart3,
-      path: '/reports',
+      path: '/admin/analytics',
       color: 'bg-green-500'
+    },
+    {
+      title: 'Análisis de Rendimiento',
+      description: 'Reportes y métricas del equipo',
+      icon: TrendingUp,
+      path: '/reports',
+      color: 'bg-indigo-500'
     },
     {
       title: 'Monitoreo de Calidad',
@@ -49,13 +56,6 @@ const AdminPanel = () => {
       icon: Target,
       path: '/campaigns',
       color: 'bg-orange-500'
-    },
-    {
-      title: 'ROI de Campañas',
-      description: 'Análisis de rentabilidad por campaña',
-      icon: TrendingUp,
-      path: '/campaigns/analytics',
-      color: 'bg-indigo-500'
     },
     {
       title: 'Alertas del Sistema',
